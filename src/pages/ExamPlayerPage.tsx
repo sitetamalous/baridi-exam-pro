@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -51,11 +50,12 @@ const ExamPlayerPage: React.FC = () => {
       const { data: examData } = await supabase.from("exams").select("*").eq("id", examId).maybeSingle();
       if (examData) setExam(examData);
       const { data } = await supabase.rpc("get_shuffled_questions", { exam_uuid: examId });
+      // Safely add explanation as empty string, so no TS error if not present
       const normalizedQuestions = (data || []).map((q) => ({
         id: q.id,
         question_text: q.question_text,
         answers: q.answers,
-        explanation: q.explanation ?? "",
+        explanation: "", // fix: default to empty string; explanation not present in rpc result
       }));
       setQuestions(normalizedQuestions);
       setLoading(false);
