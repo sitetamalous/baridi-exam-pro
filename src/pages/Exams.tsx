@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import BottomNav from "@/components/BottomNav";
 import { FileText, Check, X } from "lucide-react";
+import ExamStartDialog from "@/components/ExamStartDialog";
 
 interface Exam {
   id: string;
@@ -23,6 +24,9 @@ const Exams: React.FC = () => {
   const [exams, setExams] = useState<Exam[]>([]);
   const [attempts, setAttempts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Exam dialog
+  const [dialogOpenExamId, setDialogOpenExamId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchExams();
@@ -78,56 +82,69 @@ const Exams: React.FC = () => {
             exams.map((exam) => {
               const status = getExamStatus(exam);
               const score = getExamScore(exam);
+              const examDialogOpen = dialogOpenExamId === exam.id;
               return (
-                <Card key={exam.id} className="rounded-xl shadow px-1">
-                  <CardHeader className="pb-2 flex items-center gap-2">
-                    <CardTitle className="text-base flex-1">{exam.title}</CardTitle>
-                    {status === "completed" && (
-                      <span className="inline-flex items-center px-3 py-1 bg-green-100 text-green-800 rounded-lg text-xs font-semibold">
-                        <Check className="ml-1" size={16} />
-                        تم
-                      </span>
-                    )}
-                    {status === "in_progress" && (
-                      <span className="inline-flex items-center px-3 py-1 bg-yellow-50 text-yellow-700 rounded-lg text-xs font-semibold">
-                        <FileText className="ml-1" size={16} />
-                        جاري الحل
-                      </span>
-                    )}
-                    {status === "not_started" && (
-                      <span className="inline-flex items-center px-3 py-1 bg-gray-100 text-gray-700 rounded-lg text-xs">
-                        <X className="ml-1" size={16} />
-                        لم يبدأ بعد
-                      </span>
-                    )}
-                  </CardHeader>
-                  <CardContent className="py-2">
-                    <div className="text-sm text-gray-700 mb-3">{exam.description || "امتحان تدريبي."}</div>
-                    {score && (
-                      <div className="mb-2 text-sm text-algeria-green font-bold">
-                        نتيجتك: {score.score} نقطة ({score.percentage?.toFixed(1)}%)
-                      </div>
-                    )}
-                    <Button
-                      size="sm"
-                      className="w-full"
-                      onClick={() => {
-                        if (status === "completed") {
-                          const attempt = attempts.find((a) => a.exam_id === exam.id);
-                          navigate(`/results?attempt=${attempt?.id}`);
-                        } else {
-                          navigate(`/exam/${exam.id}`);
-                        }
-                      }}
-                    >
-                      {status === "completed"
-                        ? "مراجعة الامتحان"
-                        : status === "in_progress"
-                        ? "أكمل الحل"
-                        : "ابدأ الامتحان"}
-                    </Button>
-                  </CardContent>
-                </Card>
+                <React.Fragment key={exam.id}>
+                  <Card className="rounded-xl shadow px-1">
+                    <CardHeader className="pb-2 flex items-center gap-2">
+                      <CardTitle className="text-base flex-1">{exam.title}</CardTitle>
+                      {status === "completed" && (
+                        <span className="inline-flex items-center px-3 py-1 bg-green-100 text-green-800 rounded-lg text-xs font-semibold">
+                          <Check className="ml-1" size={16} />
+                          تم
+                        </span>
+                      )}
+                      {status === "in_progress" && (
+                        <span className="inline-flex items-center px-3 py-1 bg-yellow-50 text-yellow-700 rounded-lg text-xs font-semibold">
+                          <FileText className="ml-1" size={16} />
+                          جاري الحل
+                        </span>
+                      )}
+                      {status === "not_started" && (
+                        <span className="inline-flex items-center px-3 py-1 bg-gray-100 text-gray-700 rounded-lg text-xs">
+                          <X className="ml-1" size={16} />
+                          لم يبدأ بعد
+                        </span>
+                      )}
+                    </CardHeader>
+                    <CardContent className="py-2">
+                      <div className="text-sm text-gray-700 mb-3">{exam.description || "امتحان تدريبي."}</div>
+                      {score && (
+                        <div className="mb-2 text-sm text-algeria-green font-bold">
+                          نتيجتك: {score.score} نقطة ({score.percentage?.toFixed(1)}%)
+                        </div>
+                      )}
+                      <Button
+                        size="sm"
+                        className="w-full font-bold"
+                        onClick={() => {
+                          if (status === "completed") {
+                            const attempt = attempts.find((a) => a.exam_id === exam.id);
+                            navigate(`/results?attempt=${attempt?.id}`);
+                          } else if (status === "in_progress") {
+                            navigate(`/exam/${exam.id}`);
+                          } else {
+                            setDialogOpenExamId(exam.id);
+                          }
+                        }}
+                      >
+                        {status === "completed"
+                          ? "مراجعة الامتحان"
+                          : status === "in_progress"
+                          ? "أكمل الحل"
+                          : "ابدأ الامتحان"}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                  {/* Exam Start Dialog */}
+                  <ExamStartDialog
+                    key={"dialog-" + exam.id}
+                    examId={exam.id}
+                    examTitle={exam.title}
+                    open={examDialogOpen}
+                    onOpenChange={(open) => setDialogOpenExamId(open ? exam.id : null)}
+                  />
+                </React.Fragment>
               );
             })
           )}
