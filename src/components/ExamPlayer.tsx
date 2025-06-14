@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -139,8 +138,8 @@ const ExamPlayer: React.FC = () => {
 
       if (scoreError) throw scoreError;
 
-      // Type assertion to handle the Json type
-      const score = scoreData as ScoreResult;
+      // Safe type conversion to handle the Json type
+      const score = scoreData as unknown as ScoreResult;
 
       toast({
         title: "تم إنهاء الامتحان",
