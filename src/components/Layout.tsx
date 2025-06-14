@@ -43,7 +43,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             {/* User Menu */}
             <div className="flex items-center space-x-4 space-x-reverse">
               <span className="text-sm text-gray-700">
-                مرحباً، {user?.name}
+                مرحباً، {user?.user_metadata?.full_name || user?.email}
               </span>
               <Button
                 variant="ghost"

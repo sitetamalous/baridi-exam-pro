@@ -1,180 +1,314 @@
 
-import React from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
-import { Button } from '../components/ui/button';
-import { Badge } from '../components/ui/badge';
-import { Trophy, RotateCcw, Home, TrendingUp } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
+import { CheckCircle, XCircle, BarChart3, Calendar, Clock, Trophy } from 'lucide-react';
 
-const Results = () => {
-  const location = useLocation();
+const Results: React.FC = () => {
+  const [searchParams] = useSearchParams();
+  const { user } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
   
-  // Get results from navigation state or use mock data
-  const { score, total, examId } = location.state || { score: 35, total: 50, examId: 1 };
-  
-  const percentage = Math.round((score / total) * 100);
-  
-  const getGrade = (percentage: number) => {
-    if (percentage >= 90) return { grade: 'ممتاز', color: 'bg-green-500', description: 'أداء رائع جداً!' };
-    if (percentage >= 80) return { grade: 'جيد جداً', color: 'bg-blue-500', description: 'أداء جيد جداً' };
-    if (percentage >= 70) return { grade: 'جيد', color: 'bg-yellow-500', description: 'أداء جيد' };
-    if (percentage >= 60) return { grade: 'مقبول', color: 'bg-orange-500', description: 'يحتاج إلى تحسين' };
-    return { grade: 'ضعيف', color: 'bg-red-500', description: 'يحتاج إلى مراجعة شاملة' };
+  const [attempts, setAttempts] = useState<any[]>([]);
+  const [selectedAttempt, setSelectedAttempt] = useState<any>(null);
+  const [attemptDetails, setAttemptDetails] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (user) {
+      fetchAttempts();
+      const attemptId = searchParams.get('attempt');
+      if (attemptId) {
+        fetchAttemptDetails(attemptId);
+      }
+    }
+  }, [user, searchParams]);
+
+  const fetchAttempts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('user_attempts')
+        .select(`
+          *,
+          exams (
+            title,
+            description
+          )
+        `)
+        .eq('user_id', user?.id)
+        .order('started_at', { ascending: false });
+
+      if (error) throw error;
+      setAttempts(data || []);
+    } catch (error: any) {
+      console.error('Error fetching attempts:', error);
+      toast({
+        variant: "destructive",
+        title: "خطأ في جلب النتائج",
+        description: "حدث خطأ أثناء جلب نتائج الامتحانات",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const gradeInfo = getGrade(percentage);
+  const fetchAttemptDetails = async (attemptId: string) => {
+    try {
+      const { data: attemptData, error: attemptError } = await supabase
+        .from('user_attempts')
+        .select(`
+          *,
+          exams (
+            title,
+            description
+          )
+        `)
+        .eq('id', attemptId)
+        .single();
 
-  // Mock previous attempts data
-  const previousAttempts = [
-    { id: 1, date: '2024-01-15', score: 42, total: 50, percentage: 84 },
-    { id: 2, date: '2024-01-10', score: 38, total: 50, percentage: 76 },
-    { id: 3, date: '2024-01-05', score: 33, total: 50, percentage: 66 },
-  ];
+      if (attemptError) throw attemptError;
 
-  return (
-    <div className="max-w-4xl mx-auto space-y-8">
-      {/* Header */}
-      <div className="text-center">
-        <h1 className="text-3xl font-bold text-gray-900 mb-4">
-          نتائج الامتحان التجريبي {examId}
-        </h1>
-        <p className="text-gray-600">
-          مراجعة أدائك في الامتحان
-        </p>
+      const { data: answersData, error: answersError } = await supabase
+        .from('user_answers')
+        .select(`
+          *,
+          questions (
+            question_text,
+            explanation
+          ),
+          answers!selected_answer_id (
+            answer_text
+          )
+        `)
+        .eq('attempt_id', attemptId);
+
+      if (answersError) throw answersError;
+
+      // Get correct answers for each question
+      const questionIds = answersData?.map(a => a.question_id) || [];
+      const { data: correctAnswers, error: correctError } = await supabase
+        .from('answers')
+        .select('*')
+        .in('question_id', questionIds)
+        .eq('is_correct', true);
+
+      if (correctError) throw correctError;
+
+      setSelectedAttempt(attemptData);
+      setAttemptDetails({
+        answers: answersData,
+        correctAnswers: correctAnswers
+      });
+    } catch (error: any) {
+      console.error('Error fetching attempt details:', error);
+      toast({
+        variant: "destructive",
+        title: "خطأ في جلب تفاصيل الامتحان",
+        description: "حدث خطأ أثناء جلب تفاصيل النتيجة",
+      });
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-algeria-green"></div>
       </div>
+    );
+  }
 
-      {/* Main Result Card */}
-      <Card className="text-center shadow-lg">
-        <CardHeader>
-          <div className="mx-auto w-20 h-20 bg-gradient-to-br from-algeria-green to-algeria-blue rounded-full flex items-center justify-center mb-4">
-            <Trophy className="h-10 w-10 text-white" />
-          </div>
-          <CardTitle className="text-2xl">نتيجتك النهائية</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="text-6xl font-bold text-algeria-green">
-            {percentage}%
-          </div>
+  if (selectedAttempt && attemptDetails) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="mb-6">
+          <Button
+            variant="outline"
+            onClick={() => {
+              setSelectedAttempt(null);
+              setAttemptDetails(null);
+              navigate('/results');
+            }}
+            className="mb-4"
+          >
+            العودة للنتائج
+          </Button>
           
-          <div className="flex items-center justify-center space-x-4 space-x-reverse">
-            <Badge className={`${gradeInfo.color} text-white text-lg px-4 py-2`}>
-              {gradeInfo.grade}
-            </Badge>
-          </div>
-          
-          <p className="text-gray-600 text-lg">{gradeInfo.description}</p>
-          
-          <div className="grid grid-cols-3 gap-4 text-center">
-            <div>
-              <p className="text-2xl font-bold text-green-600">{score}</p>
-              <p className="text-gray-600">إجابات صحيحة</p>
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-red-600">{total - score}</p>
-              <p className="text-gray-600">إجابات خاطئة</p>
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-algeria-blue">{total}</p>
-              <p className="text-gray-600">إجمالي الأسئلة</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Action Buttons */}
-      <div className="flex flex-col sm:flex-row gap-4 justify-center">
-        <Button
-          onClick={() => navigate(`/exam/${examId}`)}
-          className="bg-algeria-green hover:bg-green-700 text-white"
-        >
-          <RotateCcw className="h-4 w-4 ml-2" />
-          إعادة الامتحان
-        </Button>
-        
-        <Button
-          onClick={() => navigate('/dashboard')}
-          variant="outline"
-          className="border-algeria-blue text-algeria-blue hover:bg-blue-50"
-        >
-          <Home className="h-4 w-4 ml-2" />
-          العودة إلى لوحة التحكم
-        </Button>
-      </div>
-
-      {/* Performance Analysis */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-right flex items-center">
-            <TrendingUp className="h-5 w-5 ml-2" />
-            تحليل الأداء
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <h4 className="font-semibold mb-3 text-right">نقاط القوة</h4>
-              <ul className="space-y-2 text-right text-gray-600">
-                {percentage >= 80 && <li>• أداء ممتاز في الأسئلة العامة</li>}
-                {percentage >= 70 && <li>• فهم جيد للخدمات الأساسية</li>}
-                {percentage >= 60 && <li>• إلمام بأساسيات بريد الجزائر</li>}
-              </ul>
-            </div>
-            
-            <div>
-              <h4 className="font-semibold mb-3 text-right">نقاط التحسين</h4>
-              <ul className="space-y-2 text-right text-gray-600">
-                {percentage < 90 && <li>• مراجعة الخدمات الرقمية المتقدمة</li>}
-                {percentage < 80 && <li>• التركيز على إجراءات خدمة العملاء</li>}
-                {percentage < 70 && <li>• دراسة تفصيلية للخدمات المالية</li>}
-                {percentage < 60 && <li>• مراجعة شاملة لجميع المواضيع</li>}
-              </ul>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Previous Attempts */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-right">المحاولات السابقة</CardTitle>
-          <CardDescription className="text-right">
-            تتبع تقدمك عبر الامتحانات المختلفة
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {previousAttempts.map((attempt) => (
-              <div key={attempt.id} className="flex justify-between items-center p-3 border rounded-lg">
-                <div className="text-right">
-                  <p className="font-medium">امتحان تجريبي {attempt.id}</p>
-                  <p className="text-sm text-gray-600">{attempt.date}</p>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <span>{selectedAttempt.exams?.title}</span>
+                <div className="flex items-center space-x-4 space-x-reverse">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-algeria-green">
+                      {selectedAttempt.percentage?.toFixed(1)}%
+                    </div>
+                    <div className="text-sm text-gray-600">النسبة</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold">
+                      {selectedAttempt.score}/{attemptDetails.answers?.length}
+                    </div>
+                    <div className="text-sm text-gray-600">النقاط</div>
+                  </div>
                 </div>
-                <div className="text-left">
-                  <p className="font-bold text-lg">{attempt.percentage}%</p>
-                  <p className="text-sm text-gray-600">{attempt.score}/{attempt.total}</p>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="flex items-center">
+                  <Calendar className="h-4 w-4 ml-2" />
+                  تاريخ الامتحان: {new Date(selectedAttempt.started_at).toLocaleDateString('ar-DZ')}
+                </div>
+                <div className="flex items-center">
+                  <Clock className="h-4 w-4 ml-2" />
+                  وقت الإنهاء: {new Date(selectedAttempt.completed_at).toLocaleTimeString('ar-DZ')}
                 </div>
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        </div>
 
-      {/* Recommendations */}
-      <Card className="bg-blue-50 border-blue-200">
-        <CardHeader>
-          <CardTitle className="text-algeria-blue text-right">توصيات للتحسين</CardTitle>
-        </CardHeader>
-        <CardContent className="text-right">
-          <ul className="space-y-2 text-gray-700">
-            <li>• قم بمراجعة الأسئلة التي أخطأت فيها</li>
-            <li>• ادرس المواضيع التي حصلت فيها على درجات منخفضة</li>
-            <li>• تدرب على امتحانات أخرى لتحسين مستواك</li>
-            <li>• راجع الدليل الرسمي لبريد الجزائر</li>
-            <li>• تواصل مع المرشدين للحصول على نصائح إضافية</li>
-          </ul>
-        </CardContent>
-      </Card>
+        {/* Questions Review */}
+        <div className="space-y-4">
+          {attemptDetails.answers?.map((userAnswer: any, index: number) => {
+            const correctAnswer = attemptDetails.correctAnswers?.find(
+              (ca: any) => ca.question_id === userAnswer.question_id
+            );
+            
+            return (
+              <Card key={userAnswer.id} className="border-l-4 border-l-gray-300">
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between">
+                    <h3 className="font-medium leading-relaxed flex-1">
+                      <span className="text-algeria-green font-bold ml-2">
+                        السؤال {index + 1}:
+                      </span>
+                      {userAnswer.questions?.question_text}
+                    </h3>
+                    <div className="flex items-center ml-4">
+                      {userAnswer.is_correct ? (
+                        <CheckCircle className="h-6 w-6 text-green-500" />
+                      ) : (
+                        <XCircle className="h-6 w-6 text-red-500" />
+                      )}
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {userAnswer.selected_answer_id && (
+                    <div className={`p-3 rounded-lg ${
+                      userAnswer.is_correct ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'
+                    }`}>
+                      <span className="font-medium">إجابتك: </span>
+                      <span>{userAnswer.answers?.answer_text}</span>
+                    </div>
+                  )}
+                  
+                  {!userAnswer.is_correct && correctAnswer && (
+                    <div className="p-3 rounded-lg bg-green-50 border border-green-200">
+                      <span className="font-medium text-green-700">الإجابة الصحيحة: </span>
+                      <span>{correctAnswer.answer_text}</span>
+                    </div>
+                  )}
+                  
+                  {userAnswer.questions?.explanation && (
+                    <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
+                      <span className="font-medium text-blue-700">التفسير: </span>
+                      <span>{userAnswer.questions.explanation}</span>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold mb-2 flex items-center">
+          <BarChart3 className="h-6 w-6 ml-3" />
+          نتائج الامتحانات
+        </h1>
+        <p className="text-gray-600">اعرض نتائج امتحاناتك السابقة وراجع إجاباتك</p>
+      </div>
+
+      {attempts.length === 0 ? (
+        <Card>
+          <CardContent className="text-center py-8">
+            <Trophy className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-600 mb-4">لم تقم بأي امتحان بعد</p>
+            <Button onClick={() => navigate('/dashboard')}>
+              ابدأ امتحانك الأول
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-4">
+          {attempts.map((attempt) => (
+            <Card key={attempt.id} className="hover:shadow-md transition-shadow">
+              <CardContent className="p-6">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-lg mb-2">
+                      {attempt.exams?.title}
+                    </h3>
+                    <p className="text-gray-600 mb-3">
+                      {attempt.exams?.description}
+                    </p>
+                    <div className="flex items-center space-x-4 space-x-reverse text-sm text-gray-500">
+                      <div className="flex items-center">
+                        <Calendar className="h-4 w-4 ml-1" />
+                        {new Date(attempt.started_at).toLocaleDateString('ar-DZ')}
+                      </div>
+                      {attempt.completed_at && (
+                        <div className="flex items-center">
+                          <Clock className="h-4 w-4 ml-1" />
+                          {new Date(attempt.completed_at).toLocaleTimeString('ar-DZ')}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="text-left mr-4">
+                    {attempt.completed_at ? (
+                      <>
+                        <div className="text-2xl font-bold text-algeria-green">
+                          {attempt.percentage?.toFixed(1)}%
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          {attempt.score} نقطة
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => fetchAttemptDetails(attempt.id)}
+                          className="mt-2"
+                        >
+                          عرض التفاصيل
+                        </Button>
+                      </>
+                    ) : (
+                      <div className="text-orange-600 font-medium">
+                        غير مكتمل
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
