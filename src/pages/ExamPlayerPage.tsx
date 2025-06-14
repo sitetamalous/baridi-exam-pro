@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -112,17 +111,18 @@ const ExamPlayerPage: React.FC = () => {
     <div className="min-h-screen w-full flex flex-col items-center justify-center bg-gradient-to-br from-green-100 to-blue-50 relative pb-2">
       <div className="
         w-full max-w-md rounded-[2.2rem] bg-white/95 shadow-[0_6px_36px_0_rgba(0,166,81,0.13)]
-        relative overflow-hidden px-0 pt-0 pb-20 sm:pb-2
+        relative overflow-hidden px-0 pt-0 pb-24 sm:pb-2
         min-h-[65vh] flex flex-col justify-between
         border border-green-100
       ">
-        {/* زر الخروج العائم في أعلى اليسار */}
+        {/* زر الخروج في أعلى اليسار مع علامة * مصغرة */}
         <button
           onClick={handleExit}
           className="absolute left-3 top-3 bg-white text-algeria-green border rounded-full shadow w-9 h-9 flex items-center justify-center z-10 border-green-100 hover:bg-red-50 hover:text-red-500 transition"
           aria-label="الخروج من الامتحان"
           tabIndex={0}
         >
+          <span className="absolute -top-1 -right-1 text-red-500 text-xs font-extrabold">*</span>
           <X size={22} />
         </button>
 
@@ -141,18 +141,18 @@ const ExamPlayerPage: React.FC = () => {
           </div>
         </div>
 
-        {/* شريط أرقام الأسئلة قابل للتمرير أفقي ويظهر بالكامل على الموبايل */}
+        {/* شريط أرقام الأسئلة – قابل للتمرير وجذاب أكثر على الموبايل */}
         <div
           className="
-            flex items-center justify-start gap-1 px-1 mt-1 w-full overflow-x-auto pb-2 pt-2
-            scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 select-none
-            sticky top-0 z-20 bg-white/90 md:bg-transparent
+            flex items-center justify-start gap-1 px-2 mt-1 w-full overflow-x-auto pb-2 pt-2
+            scrollbar-thin scrollbar-thumb-green-200 scrollbar-track-green-50 select-none
+            sticky top-0 z-20 bg-white/95
             snap-x snap-mandatory
+            shadow-xs
           "
           style={{
             WebkitOverflowScrolling: "touch",
-            scrollSnapType: "x mandatory",
-            borderBottom: "1px solid #e5e7eb"
+            scrollSnapType: "x mandatory"
           }}
         >
           {questions.map((_, idx) => (
@@ -203,20 +203,18 @@ const ExamPlayerPage: React.FC = () => {
           </div>
         </div>
 
-        {/* أزرار التحكم (سابق/التالي/إرسال) مثبتة بأسفل البطاقة والموبايل */}
+        {/* شريط أزرار التحكم ⬇️ مثبت بأسفل البطاقة/الشاشة بكل الأوقات */}
         <div
           className="
             flex gap-2 justify-between items-center
-            fixed sm:static bottom-0 left-0 right-0 w-full max-w-md mx-auto
+            fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md
             bg-white/95 shadow-[0_-2px_16px_rgba(0,166,81,0.13)]
             rounded-t-2xl py-3 px-3
             z-40
             transition
+            border-t border-green-100
+            sm:static sm:rounded-t-none sm:shadow-none sm:border-t-0
           "
-          style={{
-            borderTop: "1px solid #e5e7eb",
-            // الدفع لأعلى قليلاً عن حافة الشاشة للموبايل
-          }}
         >
           <Button
             size="lg"
@@ -254,4 +252,3 @@ const ExamPlayerPage: React.FC = () => {
 };
 
 export default ExamPlayerPage;
-
