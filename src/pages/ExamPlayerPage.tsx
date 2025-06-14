@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -35,9 +34,15 @@ const ExamPlayerPage: React.FC = () => {
       const { data: examData } = await supabase.from("exams").select("*").eq("id", examId).maybeSingle();
       if (examData) setExam(examData);
       // Grab shuffled questions with answers
-      const { data: qData } = await supabase.rpc("get_shuffled_questions", { exam_uuid: examId });
-      // qData: [{id, question_text, answers:[{id, answer_text}]}]
-      setQuestions(qData || []);
+      const { data } = await supabase.rpc("get_shuffled_questions", { exam_uuid: examId });
+      // تأكد أن كل عنصر في data لديه explanation (حتى لو فاضي)
+      const normalizedQuestions = (data || []).map((q: any) => ({
+        id: q.id,
+        question_text: q.question_text,
+        answers: q.answers,
+        explanation: q.explanation ?? "", // أضف explanation للتوافق مع النوع
+      }));
+      setQuestions(normalizedQuestions);
       setLoading(false);
       if (examData) setTimer(examData.duration_minutes * 60);
     })();

@@ -1,14 +1,14 @@
 
 import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Home, FileText, BarChart3, User } from "lucide-react";
+import { Home, FileText, BarChart3, User, LayoutDashboard } from "lucide-react";
 
 interface BottomNavProps {
   className?: string;
 }
 
 const navLinks = [
-  { to: "/", label: "الرئيسية", icon: Home },
+  { to: "/dashboard", label: "لوحة التحكم", icon: LayoutDashboard },
   { to: "/exams", label: "الامتحانات", icon: FileText },
   { to: "/statistics", label: "الإحصائيات", icon: BarChart3 },
   { to: "/profile", label: "حسابي", icon: User },
@@ -27,7 +27,8 @@ const BottomNav: React.FC<BottomNavProps> = ({ className }) => {
     >
       {navLinks.map((link) => {
         const Icon = link.icon;
-        const isActive = pathname === link.to;
+        // تعتبر /dashboard و /dashboard* نشطة
+        const isActive = pathname === link.to || pathname.startsWith(link.to + "/");
         return (
           <button
             key={link.to}

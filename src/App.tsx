@@ -20,6 +20,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PWAInstallBanner from "./components/PWAInstallBanner";
 import Layout from "./components/Layout";
+import BottomNav from "./components/BottomNav";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -70,9 +71,7 @@ const App = () => {
                 {/* Protected Routes */}
                 <Route path="/dashboard" element={
                   <ProtectedRoute>
-                    <Layout>
-                      <Dashboard />
-                    </Layout>
+                    <Dashboard />
                   </ProtectedRoute>
                 } />
 
@@ -113,6 +112,8 @@ const App = () => {
                 <Route path="*" element={<NotFound />} />
               </Routes>
 
+              {/* Show BottomNav bar except on some pages */}
+              <BottomNav />
               <PWAInstallBanner />
             </div>
           </BrowserRouter>
