@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -22,6 +21,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import PWAInstallBanner from "./components/PWAInstallBanner";
 import Layout from "./components/Layout";
 import BottomNav from "./components/BottomNav";
+import ExamReviewPage from "./pages/ExamReviewPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -85,6 +85,13 @@ const App = () => {
                   </ProtectedRoute>
                 } />
 
+                {/* حل مشكلة 404: صفحة مراجعة الامتحان */}
+                <Route path="/exam/:examId/review" element={
+                  <ProtectedRoute>
+                    <ExamReviewPage />
+                  </ProtectedRoute>
+                } />
+
                 <Route path="/results" element={
                   <ProtectedRoute>
                     <Layout>
@@ -126,4 +133,3 @@ const App = () => {
 };
 
 export default App;
-
