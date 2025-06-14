@@ -13,6 +13,9 @@ import Results from "./pages/Results";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
+import Home from "./pages/Home";
+import Exams from "./pages/Exams";
+import Statistics from "./pages/Statistics";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PWAInstallBanner from "./components/PWAInstallBanner";
@@ -57,13 +60,13 @@ const App = () => {
                   ⚠️ أنت غير متصل بالإنترنت. بعض الميزات قد لا تعمل بشكل صحيح.
                 </div>
               )}
-              
+
               <Routes>
-                <Route path="/" element={<Index />} />
+                <Route path="/" element={<Home />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/login" element={<Navigate to="/auth" replace />} />
                 <Route path="/register" element={<Navigate to="/auth" replace />} />
-                
+
                 {/* Protected Routes */}
                 <Route path="/dashboard" element={
                   <ProtectedRoute>
@@ -72,7 +75,7 @@ const App = () => {
                     </Layout>
                   </ProtectedRoute>
                 } />
-                
+
                 <Route path="/exam/:examId" element={
                   <ProtectedRoute>
                     <Layout>
@@ -80,7 +83,7 @@ const App = () => {
                     </Layout>
                   </ProtectedRoute>
                 } />
-                
+
                 <Route path="/results" element={
                   <ProtectedRoute>
                     <Layout>
@@ -88,19 +91,28 @@ const App = () => {
                     </Layout>
                   </ProtectedRoute>
                 } />
-                
-                <Route path="/profile" element={
+
+                {/* NEW: Exams, Statistics, Profile - bottom nav style */}
+                <Route path="/exams" element={
                   <ProtectedRoute>
-                    <Layout>
-                      <Profile />
-                    </Layout>
+                    <Exams />
                   </ProtectedRoute>
                 } />
-                
+                <Route path="/statistics" element={
+                  <ProtectedRoute>
+                    <Statistics />
+                  </ProtectedRoute>
+                } />
+                <Route path="/profile" element={
+                  <ProtectedRoute>
+                    <Profile />
+                  </ProtectedRoute>
+                } />
+
                 {/* Catch-all route */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
-              
+
               <PWAInstallBanner />
             </div>
           </BrowserRouter>
