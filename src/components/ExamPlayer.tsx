@@ -8,13 +8,22 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Clock, ChevronLeft, ChevronRight, Flag } from 'lucide-react';
 
+interface Answer {
+  id: string;
+  answer_text: string;
+}
+
 interface Question {
   id: string;
   question_text: string;
-  answers: Array<{
-    id: string;
-    answer_text: string;
-  }>;
+  answers: Answer[];
+}
+
+interface ScoreResult {
+  total_questions: number;
+  correct_answers: number;
+  score: number;
+  percentage: number;
 }
 
 const ExamPlayer: React.FC = () => {
@@ -77,7 +86,15 @@ const ExamPlayer: React.FC = () => {
         .rpc('get_shuffled_questions', { exam_uuid: examId });
 
       if (questionsError) throw questionsError;
-      setQuestions(questionsData || []);
+      
+      // Transform the data to match our Question interface
+      const transformedQuestions: Question[] = (questionsData || []).map((q: any) => ({
+        id: q.id,
+        question_text: q.question_text,
+        answers: Array.isArray(q.answers) ? q.answers : []
+      }));
+      
+      setQuestions(transformedQuestions);
     } catch (error: any) {
       console.error('Error initializing exam:', error);
       toast({
@@ -122,9 +139,12 @@ const ExamPlayer: React.FC = () => {
 
       if (scoreError) throw scoreError;
 
+      // Type assertion to handle the Json type
+      const score = scoreData as ScoreResult;
+
       toast({
         title: "تم إنهاء الامتحان",
-        description: `تم الحصول على ${scoreData.percentage}% من الدرجات`,
+        description: `تم الحصول على ${score.percentage}% من الدرجات`,
       });
 
       navigate(`/results?attempt=${attemptId}`);
