@@ -108,21 +108,21 @@ const ExamPlayerPage: React.FC = () => {
     return <div className="flex justify-center py-8">لا توجد أسئلة متاحة لهذا الامتحان</div>;
 
   return (
-    <div className="min-h-screen w-full flex flex-col items-center justify-center bg-gradient-to-br from-green-100 to-blue-50 relative pb-2">
+    <div className="min-h-screen w-full flex flex-col items-center justify-center bg-gradient-to-br from-green-100 to-blue-50 relative pb-28">
       <div className="
         w-full max-w-md rounded-[2.2rem] bg-white/95 shadow-[0_6px_36px_0_rgba(0,166,81,0.13)]
-        relative overflow-hidden px-0 pt-0 pb-24 sm:pb-2
+        relative overflow-hidden px-0 pt-0 pb-20 sm:pb-2
         min-h-[65vh] flex flex-col justify-between
         border border-green-100
       ">
-        {/* زر الخروج في أعلى اليسار مع علامة * مصغرة */}
+        {/* زر الخروج في أعلى اليسار مع علامة * صغيرة جدًا */}
         <button
           onClick={handleExit}
           className="absolute left-3 top-3 bg-white text-algeria-green border rounded-full shadow w-9 h-9 flex items-center justify-center z-10 border-green-100 hover:bg-red-50 hover:text-red-500 transition"
           aria-label="الخروج من الامتحان"
           tabIndex={0}
         >
-          <span className="absolute -top-1 -right-1 text-red-500 text-xs font-extrabold">*</span>
+          <span className="absolute -top-0.5 -right-0.5 text-red-500" style={{fontSize: "0.7rem", fontWeight: 900}}>*</span>
           <X size={22} />
         </button>
 
@@ -206,11 +206,11 @@ const ExamPlayerPage: React.FC = () => {
         {/* شريط أزرار التحكم ⬇️ مثبت بأسفل البطاقة/الشاشة بكل الأوقات */}
         <div
           className="
-            flex gap-2 justify-between items-center
             fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md
+            flex gap-2 justify-between items-center
             bg-white/95 shadow-[0_-2px_16px_rgba(0,166,81,0.13)]
             rounded-t-2xl py-3 px-3
-            z-40
+            z-50
             transition
             border-t border-green-100
             sm:static sm:rounded-t-none sm:shadow-none sm:border-t-0
