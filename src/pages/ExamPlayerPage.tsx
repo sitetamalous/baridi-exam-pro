@@ -1,36 +1,38 @@
+
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import ExamTimer from "@/components/ExamTimer";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { ArrowLeft, ArrowRight, X } from "lucide-react";
 
-// مكون جديد: دائرة رقم السؤال الاحترافية والمستجيبة
-const QuestionNumberCircle: React.FC<{ index: number; active: boolean; onClick?: () => void }> = ({
-  index,
-  active,
-  onClick,
-}) => (
+// دائرة رقم السؤال مع إبراز السؤال الجاري
+const QuestionNumberCircle: React.FC<{
+  index: number;
+  active: boolean;
+  onClick?: () => void;
+}> = ({ index, active, onClick }) => (
   <button
     className={`
-      flex items-center justify-center font-bold
-      rounded-full 
-      text-base md:text-lg
-      w-10 h-10 md:w-11 md:h-11
-      border-2
-      ${active
-        ? "bg-algeria-green text-white border-algeria-green scale-110 shadow"
-        : "border-green-200 bg-green-50 text-algeria-green hover:bg-green-100"}
-      transition-all
+      relative flex items-center justify-center font-bold
+      rounded-full transition-all text-sm md:text-base
+      w-9 h-9 sm:w-10 sm:h-10
+      ${active ? "bg-algeria-green text-white border-4 border-algeria-green scale-110 shadow-lg ring-2 ring-green-200" 
+        : "bg-white border-2 border-green-200 text-algeria-green hover:bg-green-100"}
       focus:outline-none focus:ring-2 focus:ring-green-300 z-10
-      ${active ? "" : "hover:-translate-y-0.5"}
+      select-none
     `}
-    style={{ minWidth: 40, minHeight: 40, boxShadow: active ? "0 2px 8px rgba(0,166,81,0.07)" : undefined }}
+    style={{
+      minWidth: 36, minHeight: 36, boxShadow: active ? "0 2px 8px rgba(0,166,81,0.10)" : undefined
+    }}
     onClick={onClick}
     aria-label={`اذهب للسؤال ${index + 1}`}
     type="button"
   >
-    {index + 1}
+    <span className="">{index + 1}</span>
+    {active && (
+      <span className="absolute left-0 right-0 mx-auto -bottom-2 w-1.5 h-1.5 rounded-full bg-algeria-green"></span>
+    )}
   </button>
 );
 
@@ -55,7 +57,7 @@ const ExamPlayerPage: React.FC = () => {
         id: q.id,
         question_text: q.question_text,
         answers: q.answers,
-        explanation: "", // fix: default to empty string; explanation not present in rpc result
+        explanation: "",
       }));
       setQuestions(normalizedQuestions);
       setLoading(false);
@@ -63,7 +65,6 @@ const ExamPlayerPage: React.FC = () => {
     })();
   }, [examId]);
 
-  // Auto-save answers in localStorage
   useEffect(() => {
     if (examId) {
       localStorage.setItem(`exam-${examId}-answers`, JSON.stringify(answers));
@@ -81,7 +82,13 @@ const ExamPlayerPage: React.FC = () => {
     navigate(`/exam/${examId}/review`, { state: { answers } });
   };
 
-  // إخفاء التخطيط العام app layout (header/nav/footer) عند عرض صفحة الامتحان
+  // زر الخروج من الامتحان: العودة للصفحة السابقة أو داشبورد
+  const handleExit = () => {
+    // أي من back أو إلى "/dashboard"
+    if (window.history.length > 1) navigate(-1);
+    else navigate("/dashboard");
+  };
+
   useEffect(() => {
     document.body.classList.add("exam-full-page");
     return () => {
@@ -103,12 +110,22 @@ const ExamPlayerPage: React.FC = () => {
 
   return (
     <div className="min-h-screen w-full flex flex-col items-center justify-center bg-gradient-to-br from-green-100 to-blue-50 relative pb-2">
-      {/* البطاقة الرئيسية */}
       <div className="
         w-full max-w-md rounded-[2.2rem] bg-white/95 shadow-[0_6px_36px_0_rgba(0,166,81,0.13)]
         relative overflow-hidden px-0 pt-0 pb-20 sm:pb-2
         min-h-[65vh] flex flex-col justify-between
+        border border-green-100
       ">
+        {/* زر الخروج العائم في أعلى اليسار */}
+        <button
+          onClick={handleExit}
+          className="absolute left-3 top-3 bg-white text-algeria-green border rounded-full shadow w-9 h-9 flex items-center justify-center z-10 border-green-100 hover:bg-red-50 hover:text-red-500 transition"
+          aria-label="الخروج من الامتحان"
+          tabIndex={0}
+        >
+          <X size={22} />
+        </button>
+
         {/* ترويسة الامتحان */}
         <div className="flex flex-col items-center bg-gradient-to-tr from-algeria-green to-green-600 rounded-t-[2.2rem] shadow px-6 pt-7 pb-5 relative">
           <span className="text-white font-extrabold text-lg mb-1 text-center drop-shadow-md tracking-wide">
@@ -124,20 +141,38 @@ const ExamPlayerPage: React.FC = () => {
           </div>
         </div>
 
-        {/* شريط أرقام الأسئلة المستجيب */}
-        <div className="
-          flex justify-center gap-2 px-1 md:gap-1 mt-1 w-full overflow-x-auto pb-2 pt-2
-          scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 
-          select-none
-        ">
+        {/* شريط أرقام الأسئلة قابل للتمرير أفقي ويظهر بالكامل على الموبايل */}
+        <div
+          className="
+            flex items-center justify-start gap-1 px-1 mt-1 w-full overflow-x-auto pb-2 pt-2
+            scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 select-none
+            sticky top-0 z-20 bg-white/90 md:bg-transparent
+            snap-x snap-mandatory
+          "
+          style={{
+            WebkitOverflowScrolling: "touch",
+            scrollSnapType: "x mandatory",
+            borderBottom: "1px solid #e5e7eb"
+          }}
+        >
           {questions.map((_, idx) => (
-            <QuestionNumberCircle key={idx} index={idx} active={idx === current} onClick={() => goToQuestion(idx)} />
+            <span
+              key={idx}
+              className="snap-center"
+              style={{ minWidth: 0 }}
+            >
+              <QuestionNumberCircle
+                index={idx}
+                active={idx === current}
+                onClick={() => goToQuestion(idx)}
+              />
+            </span>
           ))}
         </div>
 
-        {/* السؤال + الخيارات */}
-        <div className="p-5 flex flex-col gap-6 min-h-[210px] mt-2">
-          <div className="text-algeria-green text-lg font-bold text-center leading-[2.2rem] mb-3 select-none">
+        {/* السؤال + الخيارات محتفظان بتجاوب ممتاز */}
+        <div className="p-4 sm:p-5 flex flex-col gap-6 min-h-[200px] mt-2">
+          <div className="text-algeria-green text-lg font-bold text-center leading-[2.2rem] mb-2 select-none">
             {questions[current].question_text}
           </div>
           <div className="flex flex-col gap-4">
@@ -168,21 +203,25 @@ const ExamPlayerPage: React.FC = () => {
           </div>
         </div>
 
-        {/* أزرار التحكم أسفل */}
-        {/* استخدام تخطيط ثابت في الأسفل عند الموبايل */}
-        <div className="
-          flex gap-3 justify-between items-center mt-4 px-5 mb-3
-          fixed bottom-0 left-0 right-0
-          w-full max-w-md mx-auto
-          bg-white/95 shadow-[0_-2px_12px_rgba(0,166,81,0.08)]
-          rounded-t-2xl py-3
-          z-50
-          sm:static sm:rounded-t-none sm:shadow-none sm:bg-transparent sm:p-0 sm:mb-3
-          ">
+        {/* أزرار التحكم (سابق/التالي/إرسال) مثبتة بأسفل البطاقة والموبايل */}
+        <div
+          className="
+            flex gap-2 justify-between items-center
+            fixed sm:static bottom-0 left-0 right-0 w-full max-w-md mx-auto
+            bg-white/95 shadow-[0_-2px_16px_rgba(0,166,81,0.13)]
+            rounded-t-2xl py-3 px-3
+            z-40
+            transition
+          "
+          style={{
+            borderTop: "1px solid #e5e7eb",
+            // الدفع لأعلى قليلاً عن حافة الشاشة للموبايل
+          }}
+        >
           <Button
             size="lg"
             variant="outline"
-            className="w-32 font-bold rounded-xl text-base flex items-center justify-center gap-1"
+            className="w-28 font-bold rounded-xl text-base flex items-center justify-center gap-1"
             onClick={handlePrev}
             disabled={current === 0}
           >
@@ -215,3 +254,4 @@ const ExamPlayerPage: React.FC = () => {
 };
 
 export default ExamPlayerPage;
+
