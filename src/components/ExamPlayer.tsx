@@ -157,17 +157,24 @@ const ExamPlayer: React.FC = () => {
     }
   };
 
+  const getTimerClass = () => {
+    if (timeLeft <= 30) return "text-red-600 timer-critical";
+    if (timeLeft <= 60) return "text-yellow-600 timer-warning";
+    return "text-algeria-green";
+  };
+
   const formatTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     const remainingSeconds = seconds % 60;
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+    return `${hours.toString().padStart(2, '0')}:${minutes
+      .toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-algeria-green"></div>
+        <div className="loading-spinner"></div>
       </div>
     );
   }
@@ -186,96 +193,106 @@ const ExamPlayer: React.FC = () => {
   const currentQ = questions[currentQuestion];
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
-      {/* Header with timer */}
-      <div className="flex justify-between items-center mb-6 bg-white p-4 rounded-lg shadow">
-        <h1 className="text-xl font-bold">{exam?.title}</h1>
-        <div className="flex items-center text-red-600 font-mono text-lg">
-          <Clock className="h-5 w-5 ml-2" />
+    <div className="exam-container min-h-screen flex flex-col bg-gradient-to-br from-green-50 to-blue-50 px-0 py-0 relative pb-24">
+      {/* شريط علوي */}
+      <div className="w-full bg-white/70 sticky top-0 z-10 flex items-center justify-between px-4 py-2 rounded-b-xl shadow-md border-b">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="rounded-full hover:bg-gray-200"
+          onClick={() => navigate('/dashboard')}
+        >
+          <span className="sr-only">خروج</span>
+          {/* يمكن استخدام أيقونة خروج */}
+          <svg width={18} height={18} viewBox="0 0 20 20" fill="none"><path d="M14 7v-2.5A2.5 2.5 0 0 0 11.5 2h-5A2.5 2.5 0 0 0 4 4.5v11A2.5 2.5 0 0 0 6.5 18h5a2.5 2.5 0 0 0 2.5-2.5V13" stroke="#00A651" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"/><path d="M17 10h-8M15 8l2 2-2 2" stroke="#00A651" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"/></svg>
+        </Button>
+        <div className="text-base font-bold text-algeria-green text-center flex-1">{exam?.title}</div>
+        <div className={getTimerClass() + " font-mono min-w-[85px] text-center text-lg flex items-center justify-center"}>
+          <span className="ml-1">⏰</span>
           {formatTime(timeLeft)}
         </div>
       </div>
 
-      {/* Progress */}
-      <div className="mb-6">
-        <div className="flex justify-between text-sm text-gray-600 mb-2">
-          <span>السؤال {currentQuestion + 1} من {questions.length}</span>
-          <span>{Object.keys(answers).length} إجابة مكتملة</span>
+      {/* تقدم الامتحان */}
+      <div className="w-full px-4 mt-4">
+        <div className="flex justify-between text-xs text-gray-500 mb-1">
+          <span>السؤال <span className="font-bold text-gray-700">{currentQuestion + 1}</span> من {questions.length}</span>
+          <span>{Object.keys(answers).length} مجاب</span>
         </div>
-        <div className="w-full bg-gray-200 rounded-full h-2">
-          <div 
+        <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+          <div
             className="bg-algeria-green h-2 rounded-full transition-all duration-300"
             style={{ width: `${((currentQuestion + 1) / questions.length) * 100}%` }}
-          ></div>
+          />
         </div>
       </div>
 
-      {/* Question Card */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="text-lg leading-relaxed">
-            {currentQ?.question_text}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {currentQ?.answers?.map((answer, index) => (
-              <label
+      {/* كارت السؤال والإجابات */}
+      <div
+        className="question-card mt-5 mb-2 py-6 px-3 md:px-6 flex flex-col rounded-2xl shadow-lg"
+        style={{
+          boxShadow: "0 8px 28px 0 rgba(0,166,81,0.09)",
+          border: "1.5px solid #E3E7EB",
+        }}
+      >
+        <div className="mb-4 font-semibold text-lg text-gray-800 text-center">
+          {currentQ?.question_text}
+        </div>
+        <div className="flex flex-col gap-3">
+          {currentQ?.answers?.map((answer, index) => {
+            const selected = answers[currentQ.id] === answer.id;
+            return (
+              <button
                 key={answer.id}
-                className={`flex items-center p-4 border rounded-lg cursor-pointer transition-all ${
-                  answers[currentQ.id] === answer.id
-                    ? 'border-algeria-green bg-green-50'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
+                aria-pressed={selected}
+                className={
+                  "answer-option w-full flex gap-3 items-center rounded-xl transition-all duration-200 text-base font-medium " +
+                  (selected
+                    ? "selected border-2 border-algeria-green ring-2 ring-green-200"
+                    : "hover:scale-105")
+                }
+                style={{ minHeight: 54, paddingRight: 18 }}
+                onClick={() => handleAnswerSelect(currentQ.id, answer.id)}
               >
-                <input
-                  type="radio"
-                  name={`question-${currentQ.id}`}
-                  value={answer.id}
-                  checked={answers[currentQ.id] === answer.id}
-                  onChange={() => handleAnswerSelect(currentQ.id, answer.id)}
-                  className="ml-3"
-                />
-                <span className="font-medium ml-2">
-                  {String.fromCharCode(65 + index)})
-                </span>
-                <span>{answer.answer_text}</span>
-              </label>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+                <span className="w-7 text-center text-sm opacity-60">{String.fromCharCode(65 + index)})</span>
+                <span className="flex-1 text-start">{answer.answer_text}</span>
+                {selected && (
+                  <span className="text-2xl -mr-2 text-algeria-green">{/* صح */}✔️</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
-      {/* Navigation */}
-      <div className="flex justify-between items-center">
+      {/* أزرار التنقل بالأسفل ـ مثبت ـ كأنها أزرار موبايل */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-sm shadow-[0_-2px_20px_0_rgba(0,166,81,0.13)] flex gap-3 px-2 py-3 z-30 max-w-lg mx-auto">
         <Button
           variant="outline"
+          size="lg"
+          className="flex-1 rounded-xl font-semibold"
           onClick={() => setCurrentQuestion(Math.max(0, currentQuestion - 1))}
           disabled={currentQuestion === 0}
         >
-          <ChevronRight className="h-4 w-4 ml-2" />
-          السابق
+          <span className="ml-2">السابق</span>
         </Button>
-
-        <div className="flex space-x-2 space-x-reverse">
-          {currentQuestion === questions.length - 1 ? (
-            <Button
-              onClick={handleSubmitExam}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              <Flag className="h-4 w-4 ml-2" />
-              إنهاء الامتحان
-            </Button>
-          ) : (
-            <Button
-              onClick={() => setCurrentQuestion(Math.min(questions.length - 1, currentQuestion + 1))}
-              disabled={currentQuestion === questions.length - 1}
-            >
-              <ChevronLeft className="h-4 w-4 ml-2" />
-              التالي
-            </Button>
-          )}
-        </div>
+        {currentQuestion === questions.length - 1 ? (
+          <Button
+            size="lg"
+            className="flex-1 bg-algeria-green rounded-xl text-white font-bold shadow-md hover:bg-green-700"
+            onClick={handleSubmitExam}
+          >
+            إنهاء الامتحان
+          </Button>
+        ) : (
+          <Button
+            size="lg"
+            className="flex-1 bg-algeria-green rounded-xl text-white font-bold shadow-md hover:bg-green-700"
+            onClick={() => setCurrentQuestion(Math.min(questions.length - 1, currentQuestion + 1))}
+          >
+            التالي
+          </Button>
+        )}
       </div>
     </div>
   );
