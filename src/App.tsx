@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -71,15 +72,16 @@ const App = () => {
                 {/* Protected Routes */}
                 <Route path="/dashboard" element={
                   <ProtectedRoute>
-                    <Dashboard />
+                    <Layout>
+                      <Dashboard />
+                    </Layout>
                   </ProtectedRoute>
                 } />
 
+                {/* لا يظهر الـ Layout في الامتحان */}
                 <Route path="/exam/:examId" element={
                   <ProtectedRoute>
-                    <Layout>
-                      <Exam />
-                    </Layout>
+                    <Exam />
                   </ProtectedRoute>
                 } />
 
@@ -124,3 +126,4 @@ const App = () => {
 };
 
 export default App;
+
