@@ -1,209 +1,176 @@
 
-import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import React from 'react';
+import { Link } from 'react-router-dom';
 import { Button } from '../components/ui/button';
-import { Card, CardContent } from '../components/ui/card';
-import { BookOpen, Users, Award, Smartphone, Wifi, Clock } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { BookOpen, Users, Award, Clock, ArrowLeft } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 const Index = () => {
   const { user } = useAuth();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (user) {
-      navigate('/dashboard');
-    }
-  }, [user, navigate]);
-
-  const features = [
-    {
-      icon: BookOpen,
-      title: 'امتحانات تجريبية شاملة',
-      description: '10 امتحانات تجريبية تحتوي على 50 سؤال لكل امتحان، مصممة خصيصاً لمنصب مكلف بالزبائن'
-    },
-    {
-      icon: Smartphone,
-      title: 'تجربة محمولة متطورة',
-      description: 'واجهة محسّنة للهواتف المحمولة مع إمكانية التثبيت كتطبيق على الشاشة الرئيسية'
-    },
-    {
-      icon: Wifi,
-      title: 'العمل بدون اتصال',
-      description: 'إمكانية متابعة الامتحانات حتى في حالة انقطاع الاتصال بالإنترنت'
-    },
-    {
-      icon: Clock,
-      title: 'توقيت واقعي',
-      description: 'محاكاة الامتحان الحقيقي بتوقيت 60 دقيقة مع تنبيهات الوقت'
-    },
-    {
-      icon: Award,
-      title: 'تقييم فوري',
-      description: 'احصل على النتائج فوراً مع مراجعة تفصيلية للإجابات الصحيحة والخاطئة'
-    },
-    {
-      icon: Users,
-      title: 'محتوى متخصص',
-      description: 'أسئلة مصممة خصيصاً لتغطي جميع جوانب عمل مكلف بالزبائن في بريد الجزائر'
-    }
-  ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-white">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
+      {/* Header */}
+      <header className="bg-white shadow-sm border-b">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="bg-algeria-green p-2 rounded-lg">
+                <BookOpen className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-gray-900">منصة امتحانات بريد الجزائر</h1>
+                <p className="text-sm text-gray-600">التحضير لامتحان مكلف بالزبائن</p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-4">
+              {user ? (
+                <Link to="/dashboard">
+                  <Button className="bg-algeria-green hover:bg-green-700">
+                    الذهاب للوحة التحكم
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                  </Button>
+                </Link>
+              ) : (
+                <Link to="/auth">
+                  <Button className="bg-algeria-green hover:bg-green-700">
+                    تسجيل الدخول
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                  </Button>
+                </Link>
+              )}
+            </div>
+          </div>
+        </div>
+      </header>
+
       {/* Hero Section */}
-      <section className="relative px-4 py-16 sm:px-6 lg:px-8">
-        <div className="max-w-4xl mx-auto text-center">
-          {/* Logo and Title */}
-          <div className="mb-8">
-            <div className="mx-auto w-24 h-24 bg-gradient-to-br from-algeria-green to-algeria-blue rounded-2xl flex items-center justify-center mb-6 shadow-lg">
-              <BookOpen className="h-12 w-12 text-white" />
-            </div>
-            <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-4 leading-tight">
-              منصة امتحانات
-              <span className="text-algeria-green block">بريد الجزائر</span>
-            </h1>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
-              استعد للامتحان الرقمي لمنصب <strong>مكلف بالزبائن</strong> مع منصة تدريبية شاملة 
-              ومصممة خصيصاً للمرشحين الجزائريين
-            </p>
-          </div>
-
-          {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
-            <Button
-              onClick={() => navigate('/register')}
-              size="lg"
-              className="bg-algeria-green hover:bg-green-700 text-white px-8 py-4 text-lg font-semibold shadow-lg transform transition-all hover:scale-105"
-            >
-              إنشاء حساب جديد
-              <BookOpen className="mr-2 h-5 w-5" />
-            </Button>
-            <Button
-              onClick={() => navigate('/login')}
-              variant="outline"
-              size="lg"
-              className="border-algeria-green text-algeria-green hover:bg-algeria-green hover:text-white px-8 py-4 text-lg font-semibold"
-            >
-              تسجيل الدخول
-            </Button>
-          </div>
-
-          {/* Stats */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 mb-16">
-            <div className="text-center">
-              <div className="text-3xl font-bold text-algeria-green mb-2">10</div>
-              <div className="text-gray-600">امتحانات تجريبية</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-algeria-green mb-2">500</div>
-              <div className="text-gray-600">سؤال متنوع</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-algeria-green mb-2">60</div>
-              <div className="text-gray-600">دقيقة لكل امتحان</div>
-            </div>
+      <section className="py-20">
+        <div className="container mx-auto px-4 text-center">
+          <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
+            استعد لامتحان
+            <span className="text-algeria-green"> مكلف بالزبائن</span>
+          </h1>
+          <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
+            منصة شاملة للتحضير لامتحان مكلف بالزبائن في بريد الجزائر
+            مع امتحانات تجريبية واقعية ونتائج فورية
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            {user ? (
+              <Link to="/dashboard">
+                <Button size="lg" className="bg-algeria-green hover:bg-green-700 text-lg px-8 py-3">
+                  بدء الامتحانات التجريبية
+                  <ArrowLeft className="mr-2 h-5 w-5" />
+                </Button>
+              </Link>
+            ) : (
+              <>
+                <Link to="/auth">
+                  <Button size="lg" className="bg-algeria-green hover:bg-green-700 text-lg px-8 py-3">
+                    ابدأ التحضير الآن
+                    <ArrowLeft className="mr-2 h-5 w-5" />
+                  </Button>
+                </Link>
+                <Link to="/auth">
+                  <Button size="lg" variant="outline" className="text-lg px-8 py-3">
+                    إنشاء حساب جديد
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </section>
 
       {/* Features Section */}
       <section className="py-16 bg-white">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
               لماذا تختار منصتنا؟
             </h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              منصة متكاملة مصممة خصيصاً للتحضير الأمثل لامتحان بريد الجزائر
+            <p className="text-gray-600 max-w-2xl mx-auto">
+              نوفر لك كل ما تحتاجه للنجاح في امتحان مكلف بالزبائن
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {features.map((feature, index) => {
-              const Icon = feature.icon;
-              return (
-                <Card key={index} className="hover:shadow-lg transition-shadow duration-300 border-0 shadow-md">
-                  <CardContent className="p-6">
-                    <div className="flex items-center mb-4">
-                      <div className="w-12 h-12 bg-gradient-to-br from-algeria-green to-algeria-blue rounded-lg flex items-center justify-center ml-4">
-                        <Icon className="h-6 w-6 text-white" />
-                      </div>
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        {feature.title}
-                      </h3>
-                    </div>
-                    <p className="text-gray-600 leading-relaxed">
-                      {feature.description}
-                    </p>
-                  </CardContent>
-                </Card>
-              );
-            })}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <Card className="text-center p-6">
+              <CardHeader>
+                <div className="bg-algeria-green p-3 rounded-full w-fit mx-auto mb-4">
+                  <BookOpen className="h-6 w-6 text-white" />
+                </div>
+                <CardTitle className="text-xl">امتحانات شاملة</CardTitle>
+                <CardDescription>
+                  أكثر من 10 امتحانات تجريبية تحاكي الامتحان الحقيقي
+                </CardDescription>
+              </CardHeader>
+            </Card>
+
+            <Card className="text-center p-6">
+              <CardHeader>
+                <div className="bg-algeria-blue p-3 rounded-full w-fit mx-auto mb-4">
+                  <Clock className="h-6 w-6 text-white" />
+                </div>
+                <CardTitle className="text-xl">محاكاة الوقت الحقيقي</CardTitle>
+                <CardDescription>
+                  تدرب على إدارة الوقت مع نفس مدة الامتحان الرسمي
+                </CardDescription>
+              </CardHeader>
+            </Card>
+
+            <Card className="text-center p-6">
+              <CardHeader>
+                <div className="bg-algeria-gold p-3 rounded-full w-fit mx-auto mb-4">
+                  <Award className="h-6 w-6 text-white" />
+                </div>
+                <CardTitle className="text-xl">تتبع التقدم</CardTitle>
+                <CardDescription>
+                  راقب أداءك وتحسن درجاتك مع الوقت
+                </CardDescription>
+              </CardHeader>
+            </Card>
+
+            <Card className="text-center p-6">
+              <CardHeader>
+                <div className="bg-algeria-red p-3 rounded-full w-fit mx-auto mb-4">
+                  <Users className="h-6 w-6 text-white" />
+                </div>
+                <CardTitle className="text-xl">محتوى محدث</CardTitle>
+                <CardDescription>
+                  أسئلة محدثة تواكب آخر التطورات في بريد الجزائر
+                </CardDescription>
+              </CardHeader>
+            </Card>
           </div>
         </div>
       </section>
 
-      {/* About Algeria Post Section */}
-      <section className="py-16 bg-gradient-to-r from-algeria-green to-algeria-blue text-white">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl font-bold mb-8">
-            عن بريد الجزائر
+      {/* CTA Section */}
+      <section className="py-16 bg-algeria-green text-white">
+        <div className="container mx-auto px-4 text-center">
+          <h2 className="text-3xl font-bold mb-4">
+            ابدأ رحلتك نحو النجاح اليوم
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div>
-              <h3 className="text-xl font-semibold mb-4">الخدمات الأساسية</h3>
-              <ul className="text-right space-y-2 opacity-90">
-                <li>• الخدمات البريدية التقليدية</li>
-                <li>• الخدمات المالية والتحويلات</li>
-                <li>• تطبيق باريدي موب (Baridi Mob)</li>
-                <li>• الحساب الجاري البريدي الإلكتروني (E-CCP)</li>
-                <li>• خدمات الدفع الإلكتروني</li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="text-xl font-semibold mb-4">دور مكلف بالزبائن</h3>
-              <ul className="text-right space-y-2 opacity-90">
-                <li>• استقبال وتوجيه الزبائن</li>
-                <li>• تقديم المساعدة في الخدمات الرقمية</li>
-                <li>• حل المشاكل والشكاوى</li>
-                <li>• تقديم المعلومات حول الخدمات</li>
-                <li>• ضمان جودة الخدمة المقدمة</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Call to Action */}
-      <section className="py-16 bg-gray-50">
-        <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-gray-900 mb-4">
-            ابدأ رحلة التحضير الآن
-          </h2>
-          <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
-            لا تضيع الوقت، احصل على أفضل إعداد لامتحان بريد الجزائر مع منصتنا المتخصصة
+          <p className="text-xl mb-8 opacity-90">
+            انضم إلى آلاف المتقدمين الذين نجحوا باستخدام منصتنا
           </p>
-          <Button
-            onClick={() => navigate('/register')}
-            size="lg"
-            className="bg-algeria-green hover:bg-green-700 text-white px-12 py-4 text-xl font-semibold shadow-lg transform transition-all hover:scale-105"
-          >
-            سجل مجاناً الآن
-            <Award className="mr-3 h-6 w-6" />
-          </Button>
+          {!user && (
+            <Link to="/auth">
+              <Button size="lg" variant="secondary" className="text-lg px-8 py-3">
+                سجل الآن مجاناً
+                <ArrowLeft className="mr-2 h-5 w-5" />
+              </Button>
+            </Link>
+          )}
         </div>
       </section>
 
       {/* Footer */}
       <footer className="bg-gray-900 text-white py-8">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <p className="text-gray-400">
-            © 2024 منصة امتحانات بريد الجزائر - جميع الحقوق محفوظة
-          </p>
-          <p className="text-gray-500 text-sm mt-2">
-            منصة تعليمية مخصصة للتحضير لامتحانات بريد الجزائر
-          </p>
+        <div className="container mx-auto px-4 text-center">
+          <p>&copy; 2024 منصة امتحانات بريد الجزائر. جميع الحقوق محفوظة.</p>
         </div>
       </footer>
     </div>

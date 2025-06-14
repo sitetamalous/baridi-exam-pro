@@ -1,40 +1,92 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
-import { BookOpen, Clock, Trophy, Users } from 'lucide-react';
+import { BookOpen, Clock, Trophy, Users, Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+
+interface Exam {
+  id: string;
+  title: string;
+  description: string | null;
+  duration_minutes: number;
+  is_published: boolean;
+  created_at: string;
+}
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const [exams, setExams] = useState<Exam[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Mock exam data
-  const exams = [
-    { id: 1, title: 'امتحان تجريبي 1 - أساسيات بريد الجزائر', questions: 50, duration: 60, difficulty: 'متوسط' },
-    { id: 2, title: 'امتحان تجريبي 2 - الخدمات الرقمية', questions: 50, duration: 60, difficulty: 'سهل' },
-    { id: 3, title: 'امتحان تجريبي 3 - خدمة العملاء', questions: 50, duration: 60, difficulty: 'صعب' },
-    { id: 4, title: 'امتحان تجريبي 4 - الخدمات المالية', questions: 50, duration: 60, difficulty: 'متوسط' },
-    { id: 5, title: 'امتحان تجريبي 5 - بريدي موب', questions: 50, duration: 60, difficulty: 'سهل' },
-    { id: 6, title: 'امتحان تجريبي 6 - E-CCP', questions: 50, duration: 60, difficulty: 'متوسط' },
-    { id: 7, title: 'امتحان تجريبي 7 - إجراءات العمل', questions: 50, duration: 60, difficulty: 'صعب' },
-    { id: 8, title: 'امتحان تجريبي 8 - القوانين واللوائح', questions: 50, duration: 60, difficulty: 'متوسط' },
-    { id: 9, title: 'امتحان تجريبي 9 - حل المشاكل', questions: 50, duration: 60, difficulty: 'صعب' },
-    { id: 10, title: 'امتحان تجريبي 10 - الامتحان الشامل', questions: 50, duration: 60, difficulty: 'صعب' },
-  ];
+  useEffect(() => {
+    fetchExams();
+  }, []);
 
-  const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty) {
-      case 'سهل': return 'bg-green-500';
-      case 'متوسط': return 'bg-yellow-500';
-      case 'صعب': return 'bg-red-500';
-      default: return 'bg-gray-500';
+  const fetchExams = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('exams')
+        .select('*')
+        .eq('is_published', true)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching exams:', error);
+        toast({
+          variant: "destructive",
+          title: "خطأ في تحميل الامتحانات",
+          description: "حدث خطأ أثناء تحميل قائمة الامتحانات",
+        });
+        return;
+      }
+
+      setExams(data || []);
+    } catch (error) {
+      console.error('Error fetching exams:', error);
+      toast({
+        variant: "destructive",
+        title: "خطأ في تحميل الامتحانات",
+        description: "حدث خطأ أثناء تحميل قائمة الامتحانات",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleStartExam = (examId: number) => {
+  const getDifficultyColor = (examId: string) => {
+    // Simple logic to assign difficulty based on exam order for demo
+    const index = exams.findIndex(exam => exam.id === examId);
+    if (index < 3) return 'bg-green-500';
+    if (index < 6) return 'bg-yellow-500';
+    return 'bg-red-500';
+  };
+
+  const getDifficultyText = (examId: string) => {
+    const index = exams.findIndex(exam => exam.id === examId);
+    if (index < 3) return 'سهل';
+    if (index < 6) return 'متوسط';
+    return 'صعب';
+  };
+
+  const handleStartExam = (examId: string) => {
     navigate(`/exam/${examId}`);
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="flex items-center space-x-2">
+          <Loader2 className="h-6 w-6 animate-spin" />
+          <span className="text-lg">جاري التحميل...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -54,7 +106,7 @@ const Dashboard = () => {
           <CardContent className="flex items-center p-6">
             <BookOpen className="h-8 w-8 text-algeria-green ml-3" />
             <div>
-              <p className="text-2xl font-bold text-gray-900">10</p>
+              <p className="text-2xl font-bold text-gray-900">{exams.length}</p>
               <p className="text-gray-600 text-sm">امتحانات متاحة</p>
             </div>
           </CardContent>
@@ -92,38 +144,52 @@ const Dashboard = () => {
       </div>
 
       {/* Exams Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {exams.map((exam) => (
-          <Card key={exam.id} className="hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <div className="flex justify-between items-start">
-                <CardTitle className="text-lg text-right">{exam.title}</CardTitle>
-                <Badge className={`${getDifficultyColor(exam.difficulty)} text-white`}>
-                  {exam.difficulty}
-                </Badge>
-              </div>
-              <CardDescription className="text-right">
-                امتحان تجريبي شامل لتقييم معرفتك
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex justify-between text-sm text-gray-600">
-                  <span>{exam.questions} سؤال</span>
-                  <span>{exam.duration} دقيقة</span>
+      {exams.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {exams.map((exam) => (
+            <Card key={exam.id} className="hover:shadow-lg transition-shadow">
+              <CardHeader>
+                <div className="flex justify-between items-start">
+                  <CardTitle className="text-lg text-right">{exam.title}</CardTitle>
+                  <Badge className={`${getDifficultyColor(exam.id)} text-white`}>
+                    {getDifficultyText(exam.id)}
+                  </Badge>
                 </div>
-                
-                <Button
-                  onClick={() => handleStartExam(exam.id)}
-                  className="w-full bg-algeria-green hover:bg-green-700 text-white"
-                >
-                  بدء الامتحان
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+                <CardDescription className="text-right">
+                  {exam.description || "امتحان تجريبي شامل لتقييم معرفتك"}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex justify-between text-sm text-gray-600">
+                    <span>50 سؤال</span>
+                    <span>{exam.duration_minutes} دقيقة</span>
+                  </div>
+                  
+                  <Button
+                    onClick={() => handleStartExam(exam.id)}
+                    className="w-full bg-algeria-green hover:bg-green-700 text-white"
+                  >
+                    بدء الامتحان
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <Card className="text-center py-12">
+          <CardContent>
+            <BookOpen className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              لا توجد امتحانات متاحة حالياً
+            </h3>
+            <p className="text-gray-600">
+              يرجى المحاولة لاحقاً أو التواصل مع الإدارة
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Instructions */}
       <Card className="bg-blue-50 border-blue-200">
