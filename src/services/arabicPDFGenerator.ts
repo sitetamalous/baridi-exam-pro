@@ -1,5 +1,6 @@
+
 import { PDFDocument, rgb, StandardFonts, PDFFont, PDFPage } from 'pdf-lib';
-import fontkit from 'fontkit';
+import * as fontkit from 'fontkit';
 
 interface ExamData {
   id: string;
