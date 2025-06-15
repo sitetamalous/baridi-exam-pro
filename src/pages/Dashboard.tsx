@@ -86,8 +86,10 @@ const Dashboard = () => {
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-green-50 to-blue-50 !font-arabic animate-fade-in pb-24"
       style={{ direction: 'rtl' }}>
-      {/* رأس صفحة متجاوب واحترافي كمكون منفصل */}
-      <DashboardHeader />
+      {/* رأس صفحة متجاوب واحترافي: يظهر فقط على الشاشات >= sm */}
+      <div className="hidden sm:block">
+        <DashboardHeader />
+      </div>
 
       {/* عنوان رئيسي للوحة التحكم */}
       <div className="w-full flex flex-col items-center mb-3 pt-1">

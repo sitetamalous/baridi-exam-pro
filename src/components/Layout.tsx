@@ -27,8 +27,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
+      {/* Header - يظهر فقط على الشاشات الكبيرة */}
+      <header className="bg-white shadow-sm border-b hidden sm:block">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
@@ -59,8 +59,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </div>
       </header>
 
-      {/* Navigation */}
-      <nav className="bg-white border-b">
+      {/* Navigation - يظهر فقط على الشاشات الكبيرة */}
+      <nav className="bg-white border-b hidden sm:block">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex space-x-8 space-x-reverse">
             {menuItems.map((item) => {
@@ -94,7 +94,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       </main>
 
       {/* Footer */}
-      <footer className="bg-white border-t mt-8">
+      <footer className="bg-white border-t mt-8 hidden sm:block">
         <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
           <div className="text-center text-sm text-gray-500">
             © 2024 بريد الجزائر - منصة الامتحانات الرقمية
