@@ -112,7 +112,14 @@ export const usePDFGenerator = () => {
       doc.setFont('helvetica', 'normal');
       const selectedAnswer = answer.question.answers.find(a => a.id === answer.selected_answer_id);
       const userAnswerText = `Your answer: ${selectedAnswer?.answer_text || 'No answer'}`;
-      doc.setTextColor(answer.is_correct ? 0, 150, 0 : 255, 0, 0);
+      
+      // Set color based on correctness
+      if (answer.is_correct) {
+        doc.setTextColor(0, 150, 0); // Green for correct
+      } else {
+        doc.setTextColor(255, 0, 0); // Red for incorrect
+      }
+      
       doc.text(userAnswerText, 25, yPosition + 5);
       
       // Correct answer (if user was wrong)
