@@ -1,3 +1,4 @@
+
 import React from "react";
 import { useStatistics } from "@/hooks/useStatistics";
 import {
@@ -210,14 +211,6 @@ const Statistics: React.FC = () => {
                     )}
                   </span>
                 </div>
-                {/* (اختياري) زر مراجعة */}
-                {/* <Button 
-                  size="sm" 
-                  className="rounded-full ml-3 bg-algeria-blue/90 text-white hover:bg-blue-600 transition"
-                  onClick={() => {/* TODO: implement navigation */}}
-                >
-                  مراجعة
-                </Button> */}
               </Card>
             ))
           ) : (
