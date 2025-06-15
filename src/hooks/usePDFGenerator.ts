@@ -77,6 +77,19 @@ export const usePDFGenerator = () => {
     return { attempt, answers };
   };
 
+  // Helper function to reverse Arabic text for proper RTL display in PDF
+  const reverseArabicText = (text: string) => {
+    // Simple Arabic text reversal for better PDF display
+    // This is a basic implementation - for complex text you might need a more sophisticated solution
+    const arabicRegex = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
+    
+    if (arabicRegex.test(text)) {
+      // Split by spaces and reverse word order for RTL
+      return text.split(' ').reverse().join(' ');
+    }
+    return text;
+  };
+
   const generatePDFContent = (attempt: ExamAttempt, answers: UserAnswer[]) => {
     const doc = new jsPDF({
       orientation: 'portrait',
@@ -129,7 +142,8 @@ export const usePDFGenerator = () => {
     doc.setFont('helvetica', 'bold');
     doc.text('عنوان الامتحان:', pageWidth - margin - 5, yPosition + 8, { align: 'right' });
     doc.setFont('helvetica', 'normal');
-    doc.text(attempt.exam.title, pageWidth - margin - 5, yPosition + 15, { align: 'right' });
+    const examTitle = reverseArabicText(attempt.exam.title);
+    doc.text(examTitle, pageWidth - margin - 5, yPosition + 15, { align: 'right' });
     
     doc.setFont('helvetica', 'bold');
     doc.text('تاريخ الإجراء:', pageWidth - margin - 5, yPosition + 22, { align: 'right' });
@@ -200,7 +214,8 @@ export const usePDFGenerator = () => {
       doc.text(`السؤال ${index + 1}:`, pageWidth - margin - 5, yPosition + 8, { align: 'right' });
       
       doc.setFont('helvetica', 'normal');
-      const questionLines = doc.splitTextToSize(answer.question.question_text, contentWidth - 20);
+      const questionText = reverseArabicText(answer.question.question_text);
+      const questionLines = doc.splitTextToSize(questionText, contentWidth - 20);
       doc.text(questionLines as string[], pageWidth - margin - 5, yPosition + 15, { align: 'right' });
       
       yPosition += questionHeight + 5;
@@ -219,7 +234,8 @@ export const usePDFGenerator = () => {
       
       doc.setFont('helvetica', 'normal');
       const userAnswerText = selectedAnswer?.answer_text || 'لم يتم الإجابة';
-      doc.text(userAnswerText, pageWidth - margin - 15, yPosition + 12, { align: 'right' });
+      const reversedUserAnswer = reverseArabicText(userAnswerText);
+      doc.text(reversedUserAnswer, pageWidth - margin - 15, yPosition + 12, { align: 'right' });
       
       yPosition += 20;
       
@@ -236,7 +252,9 @@ export const usePDFGenerator = () => {
         doc.text('الإجابة الصحيحة:', pageWidth - margin - 15, yPosition + 6, { align: 'right' });
         
         doc.setFont('helvetica', 'normal');
-        doc.text(correctAnswer?.answer_text || 'غير محدد', pageWidth - margin - 15, yPosition + 12, { align: 'right' });
+        const correctAnswerText = correctAnswer?.answer_text || 'غير محدد';
+        const reversedCorrectAnswer = reverseArabicText(correctAnswerText);
+        doc.text(reversedCorrectAnswer, pageWidth - margin - 15, yPosition + 12, { align: 'right' });
         
         yPosition += 20;
       }

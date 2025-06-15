@@ -1,5 +1,4 @@
-
-const CACHE_NAME = 'algeria-post-exam-v1.1.0';
+const CACHE_NAME = 'algeria-post-exam-v1.2.0';
 const urlsToCache = [
   '/',
   '/static/js/bundle.js',
@@ -21,8 +20,34 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// Fetch event with enhanced offline support
+// Enhanced fetch event with PDF worker support
 self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+  
+  // Handle PDF.js worker requests specially
+  if (url.pathname.includes('pdf.worker') || url.pathname.includes('pdfjs-dist')) {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          // Clone the response for caching
+          const responseToCache = response.clone();
+          
+          caches.open(CACHE_NAME)
+            .then((cache) => {
+              cache.put(event.request, responseToCache);
+            });
+
+          return response;
+        })
+        .catch(() => {
+          // Try to return from cache if network fails
+          return caches.match(event.request);
+        })
+    );
+    return;
+  }
+
+  // Regular fetch handling
   event.respondWith(
     caches.match(event.request)
       .then((response) => {
