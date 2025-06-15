@@ -79,75 +79,99 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
-        <div className="flex items-center space-x-2">
-          <Loader2 className="h-6 w-6 animate-spin" />
-          <span className="text-lg">جاري التحميل...</span>
-        </div>
+      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-4rem)] bg-gradient-to-br from-green-50 to-blue-50 animate-fade-in">
+        <Loader2 className="h-10 w-10 animate-spin text-algeria-green mb-2" />
+        <span className="text-lg font-bold text-algeria-green">جاري تحميل لوحة التحكم...</span>
         <BottomNav />
       </div>
     );
   }
 
   return (
-    <div className="relative pb-20 pt-3 px-1 min-h-screen bg-gradient-to-br from-green-50 to-blue-50 animate-fade-in"
-      style={{ direction: 'rtl', fontFamily: 'arabic, Arial, sans-serif' }}>
-      {/* Header */}
-      <div className="text-center mb-2">
-        <h1 className="text-2xl font-extrabold text-algeria-green mb-1">
-          لوحة تحكم الامتحانات
+    <div className="relative pb-24 pt-5 px-1 min-h-screen bg-gradient-to-br from-green-50 to-blue-50 !font-arabic animate-fade-in"
+      style={{ direction: 'rtl' }}>
+      {/* لا يوجد header أو navigation bar */}
+
+      {/* عنوان وإرشادات صغيرة للموبايل تظهر بشكل حديث */}
+      <div className="flex flex-col items-center mb-5">
+        <h1 className="text-2xl font-extrabold text-algeria-green mb-1 mt-1 tracking-tight rounded-lg shadow-sm px-3 py-2 bg-white/90 border border-algeria-green/20">
+          الامتحانات
         </h1>
-        <p className="text-gray-600 text-sm mb-3">
-          اختر الامتحان الذي تريد أداؤه للتحضير للامتحان الرسمي
+        <p className="text-gray-600 text-sm mb-1 text-center max-w-xs bg-white/60 rounded px-2 font-medium shadow">
+          حضّر نفسك للامتحان الرسمي! اختر أي امتحان تريد.
         </p>
       </div>
 
-      {/* Stats Cards */}
+      {/* احصائيات بشكل حديث وعصري مع تأثيرات تفاعلية */}
       <div className="grid grid-cols-2 gap-2 mb-4 md:grid-cols-4 md:gap-4">
-        <Card><CardContent className="flex items-center p-3 md:p-6"><BookOpen className="h-7 w-7 text-algeria-green ml-2" /><div><p className="text-xl font-bold text-gray-900">{exams.length}</p><p className="text-gray-600 text-xs">امتحانات متاحة</p></div></CardContent></Card>
-        <Card><CardContent className="flex items-center p-3 md:p-6"><Clock className="h-7 w-7 text-algeria-blue ml-2" /><div><p className="text-xl font-bold text-gray-900">60</p><p className="text-gray-600 text-xs">دقيقة لكل امتحان</p></div></CardContent></Card>
-        <Card><CardContent className="flex items-center p-3 md:p-6"><Trophy className="h-7 w-7 text-algeria-gold ml-2" /><div><p className="text-xl font-bold text-gray-900">50</p><p className="text-gray-600 text-xs">سؤال في كل امتحان</p></div></CardContent></Card>
-        <Card><CardContent className="flex items-center p-3 md:p-6"><Users className="h-7 w-7 text-algeria-red ml-2" /><div><p className="text-xl font-bold text-gray-900">4</p><p className="text-gray-600 text-xs">خيارات لكل سؤال</p></div></CardContent></Card>
+        <Card className="rounded-2xl shadow hover:scale-105 hover:shadow-lg transition-transform border-0 bg-white/95">
+          <CardContent className="flex flex-col items-center justify-center p-3 md:p-6">
+            <BookOpen className="h-8 w-8 text-algeria-green mb-1" />
+            <p className="text-lg font-bold text-gray-900">{exams.length}</p>
+            <p className="text-xs text-gray-600">امتحانات متاحة</p>
+          </CardContent>
+        </Card>
+        <Card className="rounded-2xl shadow hover:scale-105 hover:shadow-lg transition-transform border-0 bg-white/95">
+          <CardContent className="flex flex-col items-center justify-center p-3 md:p-6">
+            <Clock className="h-8 w-8 text-algeria-blue mb-1" />
+            <p className="text-lg font-bold text-gray-900">60</p>
+            <p className="text-xs text-gray-600">دقيقة لكل امتحان</p>
+          </CardContent>
+        </Card>
+        <Card className="rounded-2xl shadow hover:scale-105 hover:shadow-lg transition-transform border-0 bg-white/95">
+          <CardContent className="flex flex-col items-center justify-center p-3 md:p-6">
+            <Trophy className="h-8 w-8 text-algeria-gold mb-1" />
+            <p className="text-lg font-bold text-gray-900">50</p>
+            <p className="text-xs text-gray-600">سؤال في كل امتحان</p>
+          </CardContent>
+        </Card>
+        <Card className="rounded-2xl shadow hover:scale-105 hover:shadow-lg transition-transform border-0 bg-white/95">
+          <CardContent className="flex flex-col items-center justify-center p-3 md:p-6">
+            <Users className="h-8 w-8 text-algeria-red mb-1" />
+            <p className="text-lg font-bold text-gray-900">4</p>
+            <p className="text-xs text-gray-600">خيارات لكل سؤال</p>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Exams Grid */}
+      {/* قائمة الامتحانات بشكل بطاقات متجاوبة عصرية */}
       {exams.length > 0 ? (
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3 mb-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 mb-6">
           {exams.map((exam) => (
-            <Card key={exam.id} className="transition-shadow shadow rounded-xl hover:shadow-md">
-              <CardHeader>
+            <Card key={exam.id} className="transition-all rounded-2xl shadow-md hover:shadow-xl hover:scale-105 bg-white border-0 relative overflow-hidden cursor-pointer group animate-fade-in">
+              <CardHeader className="pb-2">
                 <div className="flex justify-between items-start">
-                  <CardTitle className="text-base text-right">{exam.title}</CardTitle>
-                  <Badge className={`${getDifficultyColor(exam.id)} text-white`}>
+                  <CardTitle className="text-base text-right font-bold leading-tight group-hover:text-algeria-green transition-colors">
+                    {exam.title}
+                  </CardTitle>
+                  <Badge className={`${getDifficultyColor(exam.id)} text-white px-3 py-1 text-xs rounded-xl shadow`}>
                     {getDifficultyText(exam.id)}
                   </Badge>
                 </div>
-                <CardDescription className="text-right">
+                <CardDescription className="text-right font-normal text-gray-500/90 group-hover:text-gray-700 transition-colors">
                   {exam.description || "امتحان تجريبي شامل لتقييم معرفتك"}
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  <div className="flex justify-between text-xs text-gray-600">
-                    <span>50 سؤال</span>
-                    <span>{exam.duration_minutes} دقيقة</span>
-                  </div>
-                  <Button
-                    onClick={() => handleStartExam(exam.id)}
-                    className="w-full bg-algeria-green hover:bg-green-700 text-white mt-3"
-                  >
-                    بدء الامتحان
-                  </Button>
+                <div className="flex items-center justify-between text-xs text-gray-600 mb-2">
+                  <span className="px-2 py-1 rounded-lg bg-blue-50">50 سؤال</span>
+                  <span className="px-2 py-1 rounded-lg bg-green-50">{exam.duration_minutes} دقيقة</span>
                 </div>
+                <Button
+                  onClick={() => handleStartExam(exam.id)}
+                  className="w-full bg-algeria-green hover:bg-green-700 text-white mt-2 font-bold rounded-xl shadow hover:scale-105 transition-all text-base py-2"
+                >
+                  بدء الامتحان
+                </Button>
               </CardContent>
             </Card>
           ))}
         </div>
       ) : (
-        <Card className="text-center py-12 my-4 rounded-xl">
+        <Card className="text-center py-14 my-6 rounded-2xl shadow bg-white/65 border-0">
           <CardContent>
-            <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-1">
+            <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4 animate-pulse" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
               لا توجد امتحانات متاحة حالياً
             </h3>
             <p className="text-gray-600 text-sm">
@@ -157,10 +181,12 @@ const Dashboard = () => {
         </Card>
       )}
 
-      {/* Instructions */}
-      <Card className="bg-blue-50 border-blue-200 mt-3 rounded-xl">
-        <CardHeader>
-          <CardTitle className="text-algeria-blue text-right text-sm">تعليمات الامتحان</CardTitle>
+      {/* تعليمات الامتحان - تظهر بشكل تفاعلي وجذاب */}
+      <Card className="bg-blue-50/60 border-blue-200 mt-6 rounded-2xl shadow">
+        <CardHeader className="pb-1">
+          <CardTitle className="text-algeria-blue text-right text-base font-bold">
+            تعليمات الامتحان
+          </CardTitle>
         </CardHeader>
         <CardContent className="text-right text-xs">
           <ul className="space-y-1 text-gray-700">
@@ -179,3 +205,4 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+
