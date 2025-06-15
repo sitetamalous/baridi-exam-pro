@@ -4,86 +4,60 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. */
-
 @layer base {
   :root {
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
-
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
-
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-
-    --primary: 142 76% 32%;
+    --primary: 222.2 47.4% 11.2%;
     --primary-foreground: 210 40% 98%;
-
-    --secondary: 210 40% 96.1%;
+    --secondary: 210 40% 96%;
     --secondary-foreground: 222.2 47.4% 11.2%;
-
-    --muted: 210 40% 96.1%;
+    --muted: 210 40% 96%;
     --muted-foreground: 215.4 16.3% 46.9%;
-
-    --accent: 210 40% 96.1%;
+    --accent: 210 40% 96%;
     --accent-foreground: 222.2 47.4% 11.2%;
-
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 142 76% 32%;
-
+    --ring: 222.2 84% 4.9%;
     --radius: 0.5rem;
-
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
   }
 
   .dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
-
     --card: 222.2 84% 4.9%;
     --card-foreground: 210 40% 98%;
-
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
-
-    --primary: 142 76% 36%;
+    --primary: 210 40% 98%;
     --primary-foreground: 222.2 47.4% 11.2%;
-
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
-
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
-
     --accent: 217.2 32.6% 17.5%;
     --accent-foreground: 210 40% 98%;
-
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
-
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
   }
 }
 
@@ -91,182 +65,194 @@
   * {
     @apply border-border;
   }
-
+  
   body {
-    @apply bg-background text-foreground font-arabic;
-    direction: rtl;
+    @apply bg-background text-foreground;
+    font-family: 'Noto Sans Arabic', sans-serif;
   }
 
   html {
-    direction: rtl;
+    scroll-behavior: smooth;
   }
 
   /* RTL Support */
   .rtl {
     direction: rtl;
-    text-align: right;
   }
 
-  .ltr {
-    direction: ltr;
-    text-align: left;
+  /* Algeria Post Colors */
+  .text-algeria-green {
+    color: #00A651;
+  }
+  
+  .bg-algeria-green {
+    background-color: #00A651;
+  }
+  
+  .text-algeria-blue {
+    color: #0066CC;
+  }
+  
+  .bg-algeria-blue {
+    background-color: #0066CC;
+  }
+  
+  .text-algeria-red {
+    color: #DC3545;
+  }
+  
+  .bg-algeria-red {
+    background-color: #DC3545;
   }
 
-  /* Arabic Typography */
-  .arabic-text {
-    font-family: 'Noto Sans Arabic', Arial, sans-serif;
-    line-height: 1.8;
-    letter-spacing: 0.02em;
+  /* Custom Loading Spinner */
+  .loading-spinner {
+    @apply animate-spin rounded-full h-8 w-8 border-b-2 border-algeria-green;
   }
 
-  /* PWA Styles */
-  .pwa-install-banner {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: linear-gradient(135deg, #00A651, #0073E6);
-    color: white;
-    padding: 1rem;
-    text-align: center;
-    transform: translateY(100%);
-    transition: transform 0.3s ease;
-    z-index: 1000;
-  }
-
-  .pwa-install-banner.show {
-    transform: translateY(0);
-  }
-
-  /* Mobile optimizations */
+  /* Enhanced Mobile Touch Targets */
   @media (max-width: 768px) {
-    body {
-      font-size: 16px;
-      -webkit-text-size-adjust: 100%;
-    }
-    
-    .mobile-optimized {
-      padding: 0.5rem;
-    }
-    
     .touch-target {
       min-height: 44px;
       min-width: 44px;
     }
+    
+    .card-touch {
+      @apply p-4 rounded-2xl shadow-lg transition-all duration-200;
+    }
+    
+    .card-touch:active {
+      @apply scale-95 shadow-md;
+    }
   }
 
-  /* Exam interface styles */
-  .exam-container {
-    max-width: 100%;
-    margin: 0 auto;
-    padding: 1rem;
+  /* PWA Install Banner Animation */
+  @keyframes slide-in-bottom {
+    from {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
   }
 
-  .question-card {
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    margin-bottom: 1rem;
-    overflow: hidden;
-    transition: all 0.3s ease;
+  .animate-slide-in-bottom {
+    animation: slide-in-bottom 0.3s ease-out;
   }
 
-  .question-card:hover {
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  /* Chart Animations */
+  .recharts-line {
+    animation: drawLine 1.5s ease-in-out;
   }
 
-  .answer-option {
-    border: 2px solid #e5e7eb;
-    border-radius: 8px;
-    padding: 12px 16px;
-    margin: 8px 0;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    background: #f9fafb;
+  @keyframes drawLine {
+    from {
+      stroke-dasharray: 1000;
+      stroke-dashoffset: 1000;
+    }
+    to {
+      stroke-dasharray: 1000;
+      stroke-dashoffset: 0;
+    }
   }
 
-  .answer-option:hover {
-    border-color: #00A651;
-    background: #f0f9f4;
+  /* Fade in animations for cards */
+  .fade-in {
+    animation: fadeIn 0.5s ease-in-out;
   }
 
-  .answer-option.selected {
-    border-color: #00A651;
-    background: #dcfce7;
-    color: #166534;
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
-  .answer-option.correct {
-    border-color: #10b981;
-    background: #d1fae5;
-    color: #065f46;
+  /* Enhanced button hover effects */
+  .btn-hover {
+    @apply transition-all duration-200 hover:shadow-lg active:scale-95;
   }
 
-  .answer-option.incorrect {
-    border-color: #ef4444;
-    background: #fee2e2;
-    color: #991b1b;
+  /* Offline indicator */
+  .offline-indicator {
+    @apply fixed top-0 left-0 right-0 bg-yellow-500 text-white text-center py-2 px-4 text-sm z-50;
+    animation: slide-in-top 0.3s ease-out;
   }
 
-  /* Timer styles */
-  .timer-warning {
-    color: #f59e0b;
-    animation: pulse 1s infinite;
+  @keyframes slide-in-top {
+    from {
+      transform: translateY(-100%);
+    }
+    to {
+      transform: translateY(0);
+    }
   }
 
-  .timer-critical {
-    color: #ef4444;
-    animation: pulse 0.5s infinite;
+  /* Custom scrollbar for webkit browsers */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #00A651;
+    border-radius: 10px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #008A43;
   }
 
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
+  /* Print styles for PDF generation */
+  @media print {
+    .no-print {
+      display: none !important;
+    }
+    
+    .print-break {
+      page-break-before: always;
+    }
   }
+}
 
-  /* Loading animations */
-  .loading-spinner {
-    border: 3px solid #f3f4f6;
-    border-top: 3px solid #00A651;
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    animation: spin 1s linear infinite;
-    margin: 20px auto;
-  }
+/* Responsive breakpoints */
+@screen xs {
+  /* 480px and up */
+}
 
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
+@screen sm {
+  /* 640px and up */
+}
 
-  /* Score display */
-  .score-circle {
-    position: relative;
-    width: 120px;
-    height: 120px;
-    border-radius: 50%;
-    background: conic-gradient(#00A651 0deg, #00A651 var(--score-angle), #e5e7eb var(--score-angle), #e5e7eb 360deg);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto;
-  }
+@screen md {
+  /* 768px and up */
+}
 
-  .score-circle::before {
-    content: '';
-    position: absolute;
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    background: white;
-  }
+@screen lg {
+  /* 1024px and up */
+}
 
-  .score-text {
-    position: relative;
-    z-index: 1;
-    font-weight: bold;
-    font-size: 1.5rem;
-    color: #00A651;
-  }
+@screen xl {
+  /* 1280px and up */
+}
+
+/* Custom utilities */
+.text-shadow {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.glass-effect {
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
 }

@@ -1,5 +1,5 @@
 
-const CACHE_NAME = 'algeria-post-exam-v1.0.0';
+const CACHE_NAME = 'algeria-post-exam-v1.1.0';
 const urlsToCache = [
   '/',
   '/static/js/bundle.js',
@@ -21,15 +21,38 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// Fetch event
+// Fetch event with enhanced offline support
 self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(event.request)
       .then((response) => {
         // Return cached version or fetch from network
-        return response || fetch(event.request);
-      }
-    )
+        if (response) {
+          return response;
+        }
+        
+        return fetch(event.request).then((response) => {
+          // Don't cache if not a valid response
+          if (!response || response.status !== 200 || response.type !== 'basic') {
+            return response;
+          }
+
+          // Clone the response for caching
+          const responseToCache = response.clone();
+          
+          caches.open(CACHE_NAME)
+            .then((cache) => {
+              cache.put(event.request, responseToCache);
+            });
+
+          return response;
+        }).catch(() => {
+          // Return offline page for navigation requests
+          if (event.request.destination === 'document') {
+            return caches.match('/');
+          }
+        });
+      })
   );
 });
 
@@ -49,13 +72,14 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Background sync for offline exam submissions
+// Background sync for offline exam submissions and PDF generation
 self.addEventListener('sync', (event) => {
   if (event.tag === 'submit-exam') {
-    event.waitUntil(
-      // Handle offline exam submission
-      handleOfflineExamSubmission()
-    );
+    event.waitUntil(handleOfflineExamSubmission());
+  }
+  
+  if (event.tag === 'generate-pdf') {
+    event.waitUntil(handleOfflinePDFGeneration());
   }
 });
 
@@ -72,12 +96,24 @@ async function handleOfflineExamSubmission() {
       });
       
       if (response.ok) {
-        // Clear stored data after successful submission
         await clearStoredExamData();
       }
     }
   } catch (error) {
     console.error('Failed to submit offline exam:', error);
+  }
+}
+
+async function handleOfflinePDFGeneration() {
+  try {
+    const pendingPDFs = await getStoredPDFRequests();
+    for (const pdfRequest of pendingPDFs) {
+      // Generate PDF when back online
+      await generateOfflinePDF(pdfRequest);
+    }
+    await clearStoredPDFRequests();
+  } catch (error) {
+    console.error('Failed to generate offline PDFs:', error);
   }
 }
 
@@ -91,16 +127,42 @@ async function getStoredExamData() {
   return null;
 }
 
+async function getStoredPDFRequests() {
+  const cache = await caches.open('pdf-requests');
+  const requests = await cache.keys();
+  const pdfRequests = [];
+  
+  for (const request of requests) {
+    const response = await cache.match(request);
+    if (response) {
+      pdfRequests.push(await response.json());
+    }
+  }
+  
+  return pdfRequests;
+}
+
 async function clearStoredExamData() {
   const cache = await caches.open('exam-submissions');
   const requests = await cache.keys();
   await Promise.all(requests.map(request => cache.delete(request)));
 }
 
-// Push notification handler
+async function clearStoredPDFRequests() {
+  const cache = await caches.open('pdf-requests');
+  const requests = await cache.keys();
+  await Promise.all(requests.map(request => cache.delete(request)));
+}
+
+async function generateOfflinePDF(pdfRequest) {
+  // This would handle offline PDF generation logic
+  console.log('Generating offline PDF for:', pdfRequest);
+}
+
+// Push notification handler with Arabic support
 self.addEventListener('push', (event) => {
-  const options = {
-    body: event.data ? event.data.text() : 'إشعار جديد من منصة امتحانات بريد الجزائر',
+  let options = {
+    body: 'إشعار جديد من منصة امتحانات بريد الجزائر',
     icon: '/icon-192x192.png',
     badge: '/icon-72x72.png',
     vibrate: [100, 50, 100],
@@ -109,8 +171,25 @@ self.addEventListener('push', (event) => {
       primaryKey: 1
     },
     dir: 'rtl',
-    lang: 'ar'
+    lang: 'ar',
+    actions: [
+      {
+        action: 'view',
+        title: 'عرض',
+        icon: '/icon-72x72.png'
+      },
+      {
+        action: 'close',
+        title: 'إغلاق'
+      }
+    ]
   };
+
+  if (event.data) {
+    const data = event.data.json();
+    options.body = data.body || options.body;
+    options.title = data.title;
+  }
 
   event.waitUntil(
     self.registration.showNotification('منصة امتحانات بريد الجزائر', options)
@@ -121,7 +200,24 @@ self.addEventListener('push', (event) => {
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   
-  event.waitUntil(
-    clients.openWindow('/')
-  );
+  if (event.action === 'view') {
+    event.waitUntil(
+      clients.openWindow('/statistics')
+    );
+  } else if (event.action === 'close') {
+    // Just close the notification
+    return;
+  } else {
+    // Default action - open app
+    event.waitUntil(
+      clients.openWindow('/')
+    );
+  }
+});
+
+// Handle message from main thread
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
