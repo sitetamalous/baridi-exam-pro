@@ -11,31 +11,48 @@ export const useStatistics = () => {
     queryKey: ["statistics", userId],
     enabled: !!userId,
     queryFn: async () => {
-      // جلب جميع محاولات المستخدم
+      // جلب كل المحاولات المنتهية لهذا المستخدم مع ربطها بحق الامتحان
       const { data: attempts, error } = await supabase
         .from("user_attempts")
-        .select("id,score,percentage,exam_id,completed_at")
+        .select(
+          "id,score,percentage,completed_at,exam_id,exam:exams(title)"
+        )
         .eq("user_id", userId)
+        .not("completed_at", "is", null)
         .order("completed_at", { ascending: false });
 
       if (error) throw error;
 
-      // أفضل نتيجة ونسبة النجاح
-      let best = 0, bestPercentage = 0;
+      const examsTaken = attempts ? attempts.length : 0;
+      let bestPercentage = 0;
+      let best = 0;
+      let avg = 0;
+
       if (attempts && attempts.length > 0) {
+        bestPercentage = Math.max(...attempts.map(a => a.percentage ?? 0));
+        avg =
+          attempts.reduce((acc, a) => acc + (a.percentage ?? 0), 0) /
+          attempts.length;
         for (const att of attempts) {
-          if (att.percentage && att.percentage > bestPercentage) {
-            best = att.score;
-            bestPercentage = att.percentage;
+          if (att.percentage && att.percentage === bestPercentage) {
+            best = att.score ?? 0;
           }
         }
       }
 
       return {
         attempts: attempts || [],
-        best,
+        examsTaken,
         bestPercentage,
+        avgPercentage: avg,
+        user: {
+          name:
+            user?.user_metadata?.full_name ||
+            user?.user_metadata?.name ||
+            user?.email,
+        },
       };
-    }
+    },
   });
 };
+
