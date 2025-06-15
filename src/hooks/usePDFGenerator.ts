@@ -1,208 +1,152 @@
 
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 import jsPDF from 'jspdf';
 
-// Add Arabic font support
-import 'jspdf/dist/jspdf.es.min.js';
-
-interface ExamAttemptData {
+interface ExamAttempt {
   id: string;
   score: number;
   percentage: number;
   completed_at: string;
   exam: {
     title: string;
-    description?: string;
   };
-  user_answers: Array<{
-    question: {
-      question_text: string;
-      explanation?: string;
-    };
-    selected_answer: {
+}
+
+interface UserAnswer {
+  id: string;
+  question_id: string;
+  selected_answer_id: string;
+  is_correct: boolean;
+  question: {
+    question_text: string;
+    answers: Array<{
+      id: string;
       answer_text: string;
       is_correct: boolean;
-    };
-    is_correct: boolean;
-  }>;
+    }>;
+  };
 }
 
 export const usePDFGenerator = () => {
+  const { user } = useAuth();
   const [isGenerating, setIsGenerating] = useState(false);
-  const { toast } = useToast();
 
-  const fetchAttemptData = async (attemptId: string): Promise<ExamAttemptData | null> => {
-    try {
-      const { data, error } = await supabase
-        .from('user_attempts')
-        .select(`
-          id,
-          score,
-          percentage,
-          completed_at,
-          exam:exams!inner(title, description),
-          user_answers!inner(
-            is_correct,
-            question:questions!inner(question_text, explanation),
-            selected_answer:answers!inner(answer_text, is_correct)
+  const fetchAttemptDetails = async (attemptId: string) => {
+    // Fetch attempt details
+    const { data: attempt, error: attemptError } = await supabase
+      .from('user_attempts')
+      .select(`
+        id,
+        score,
+        percentage,
+        completed_at,
+        exam:exams(title)
+      `)
+      .eq('id', attemptId)
+      .eq('user_id', user?.id)
+      .single();
+
+    if (attemptError) throw attemptError;
+
+    // Fetch user answers with questions and all possible answers
+    const { data: answers, error: answersError } = await supabase
+      .from('user_answers')
+      .select(`
+        id,
+        question_id,
+        selected_answer_id,
+        is_correct,
+        question:questions(
+          question_text,
+          answers(
+            id,
+            answer_text,
+            is_correct
           )
-        `)
-        .eq('id', attemptId)
-        .single();
+        )
+      `)
+      .eq('attempt_id', attemptId);
 
-      if (error) throw error;
-      return data as ExamAttemptData;
-    } catch (error) {
-      console.error('Error fetching attempt data:', error);
-      return null;
-    }
+    if (answersError) throw answersError;
+
+    return { attempt, answers };
   };
 
-  const generatePDFContent = (data: ExamAttemptData): jsPDF => {
+  const generatePDFContent = (attempt: ExamAttempt, answers: UserAnswer[]) => {
     const doc = new jsPDF();
     
-    // Set RTL direction and Arabic support
-    doc.setLanguage('ar');
-    doc.setR2L(true);
+    // Add Arabic font support (basic fallback)
+    doc.setFont('helvetica');
     
-    let yPosition = 20;
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const margin = 20;
-    const contentWidth = pageWidth - (margin * 2);
-
-    // Title
+    // Header
     doc.setFontSize(20);
-    doc.setFont('helvetica', 'bold');
-    doc.text('تقرير نتائج الامتحان', pageWidth - margin, yPosition, { align: 'right' });
-    yPosition += 15;
-
-    // Exam Info
-    doc.setFontSize(16);
-    doc.text(`عنوان الامتحان: ${data.exam.title}`, pageWidth - margin, yPosition, { align: 'right' });
-    yPosition += 10;
-
-    const date = new Date(data.completed_at).toLocaleDateString('ar-EG');
-    doc.setFontSize(12);
-    doc.text(`تاريخ الامتحان: ${date}`, pageWidth - margin, yPosition, { align: 'right' });
-    yPosition += 10;
-
-    doc.text(`النتيجة: ${data.score} نقطة (${Math.round(data.percentage)}%)`, pageWidth - margin, yPosition, { align: 'right' });
-    yPosition += 15;
-
-    // Pass/Fail status
-    const status = data.percentage >= 50 ? 'نجح ✓' : 'راسب ✗';
-    const statusColor = data.percentage >= 50 ? [0, 166, 81] : [220, 53, 69];
-    doc.setTextColor(...statusColor);
+    doc.text('Algeria Post - Exam Report', 20, 20);
+    
     doc.setFontSize(14);
-    doc.text(`الحالة: ${status}`, pageWidth - margin, yPosition, { align: 'right' });
-    doc.setTextColor(0, 0, 0); // Reset to black
-    yPosition += 20;
-
-    // Questions and Answers
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
-    doc.text('الأسئلة والإجابات:', pageWidth - margin, yPosition, { align: 'right' });
-    yPosition += 15;
-
-    data.user_answers.forEach((answer, index) => {
+    doc.text(`Exam: ${attempt.exam.title}`, 20, 35);
+    doc.text(`Score: ${attempt.score}/${answers.length} (${Math.round(attempt.percentage)}%)`, 20, 50);
+    doc.text(`Date: ${new Date(attempt.completed_at).toLocaleDateString()}`, 20, 65);
+    
+    // Questions and answers
+    let yPosition = 85;
+    
+    answers.forEach((answer, index) => {
       // Check if we need a new page
       if (yPosition > 250) {
         doc.addPage();
         yPosition = 20;
       }
-
-      // Question number and text
+      
+      // Question
       doc.setFontSize(12);
       doc.setFont('helvetica', 'bold');
-      doc.text(`السؤال ${index + 1}:`, pageWidth - margin, yPosition, { align: 'right' });
-      yPosition += 7;
-
-      doc.setFont('helvetica', 'normal');
-      const questionLines = doc.splitTextToSize(answer.question.question_text, contentWidth - 20);
-      questionLines.forEach((line: string) => {
-        doc.text(line, pageWidth - margin - 10, yPosition, { align: 'right' });
-        yPosition += 5;
-      });
-      yPosition += 3;
-
+      const questionText = `Q${index + 1}: ${answer.question.question_text}`;
+      const questionLines = doc.splitTextToSize(questionText, 170);
+      doc.text(questionLines as string[], 20, yPosition);
+      yPosition += questionLines.length * 7;
+      
       // User's answer
-      const userAnswerColor = answer.is_correct ? [0, 166, 81] : [220, 53, 69];
-      doc.setTextColor(...userAnswerColor);
-      doc.text(`إجابتك: ${answer.selected_answer.answer_text}`, pageWidth - margin - 10, yPosition, { align: 'right' });
-      yPosition += 7;
-
+      doc.setFont('helvetica', 'normal');
+      const selectedAnswer = answer.question.answers.find(a => a.id === answer.selected_answer_id);
+      const userAnswerText = `Your answer: ${selectedAnswer?.answer_text || 'No answer'}`;
+      doc.setTextColor(answer.is_correct ? 0, 150, 0 : 255, 0, 0);
+      doc.text(userAnswerText, 25, yPosition + 5);
+      
       // Correct answer (if user was wrong)
       if (!answer.is_correct) {
-        doc.setTextColor(0, 166, 81);
-        doc.text(`الإجابة الصحيحة: [تحتاج لاستخراجها من قاعدة البيانات]`, pageWidth - margin - 10, yPosition, { align: 'right' });
-        yPosition += 7;
+        const correctAnswer = answer.question.answers.find(a => a.is_correct);
+        doc.setTextColor(0, 100, 0);
+        doc.text(`Correct answer: ${correctAnswer?.answer_text || 'Unknown'}`, 25, yPosition + 15);
+        yPosition += 10;
       }
-
-      doc.setTextColor(0, 0, 0); // Reset to black
-
-      // Explanation (if available)
-      if (answer.question.explanation) {
-        doc.setFont('helvetica', 'italic');
-        doc.text(`التفسير: ${answer.question.explanation}`, pageWidth - margin - 10, yPosition, { align: 'right' });
-        yPosition += 7;
-      }
-
-      yPosition += 5; // Space between questions
+      
+      doc.setTextColor(0, 0, 0); // Reset color
+      yPosition += 20;
     });
-
-    // Footer
-    const totalPages = doc.internal.pages.length - 1;
-    for (let i = 1; i <= totalPages; i++) {
-      doc.setPage(i);
-      doc.setFontSize(10);
-      doc.text(`صفحة ${i} من ${totalPages}`, pageWidth / 2, doc.internal.pageSize.getHeight() - 10, { align: 'center' });
-      doc.text('منصة امتحانات بريد الجزائر', margin, doc.internal.pageSize.getHeight() - 10);
-    }
-
+    
     return doc;
   };
 
   const generatePDF = async (attemptId: string, action: 'view' | 'download' = 'view') => {
     setIsGenerating(true);
-    
     try {
-      const data = await fetchAttemptData(attemptId);
-      if (!data) {
-        toast({
-          title: 'خطأ',
-          description: 'لم يتم العثور على بيانات الامتحان',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      const pdf = generatePDFContent(data);
+      const { attempt, answers } = await fetchAttemptDetails(attemptId);
+      const doc = generatePDFContent(attempt as ExamAttempt, answers as UserAnswer[]);
       
       if (action === 'view') {
         // Open in new tab/window
-        const pdfBlob = pdf.output('blob');
-        const pdfUrl = URL.createObjectURL(pdfBlob);
+        const pdfUrl = doc.output('bloburl');
         window.open(pdfUrl, '_blank');
       } else {
         // Download
-        const fileName = `تقرير_امتحان_${data.exam.title.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
-        pdf.save(fileName);
+        doc.save(`exam-report-${attemptId}.pdf`);
       }
-
-      toast({
-        title: 'تم بنجاح',
-        description: action === 'view' ? 'تم فتح التقرير' : 'تم تحميل التقرير',
-      });
-
     } catch (error) {
-      console.error('PDF generation error:', error);
-      toast({
-        title: 'خطأ',
-        description: 'حدث خطأ في إنشاء التقرير',
-        variant: 'destructive',
-      });
+      console.error('Error generating PDF:', error);
+      throw error;
     } finally {
       setIsGenerating(false);
     }
