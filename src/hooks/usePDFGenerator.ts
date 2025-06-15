@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -11,6 +10,7 @@ interface ExamAttempt {
   completed_at: string;
   started_at: string;
   exam: {
+    id: string;
     title: string;
     description?: string;
   };
@@ -45,7 +45,7 @@ export const usePDFGenerator = () => {
         percentage,
         completed_at,
         started_at,
-        exam:exams(title, description)
+        exam:exams(id, title, description)
       `)
       .eq('id', attemptId)
       .eq('user_id', user?.id)

@@ -367,7 +367,7 @@ export class ArabicPDFGenerator {
     // User's answer
     this.checkPageSpace(50);
     const selectedAnswer = question.question.answers.find(a => a.id === question.selected_answer_id);
-    const answerColor = question.is_correct ? [0.13, 0.77, 0.37] : [0.94, 0.27, 0.27];
+    const answerColor: [number, number, number] = question.is_correct ? [0.13, 0.77, 0.37] : [0.94, 0.27, 0.27];
 
     this.currentPage.drawRectangle({
       x: this.margin + 20,
