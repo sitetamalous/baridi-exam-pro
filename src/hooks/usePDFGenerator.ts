@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import jsPDF from 'jspdf';
+import { ArabicPDFGenerator } from '@/services/arabicPDFGenerator';
 
 interface ExamAttempt {
   id: string;
@@ -74,228 +74,50 @@ export const usePDFGenerator = () => {
 
     if (answersError) throw answersError;
 
-    return { attempt, answers };
-  };
+    // Get user profile data
+    const { data: userProfile } = await supabase
+      .from('users')
+      .select('full_name, email')
+      .eq('id', user?.id)
+      .single();
 
-  // Helper function to reverse Arabic text for proper RTL display in PDF
-  const reverseArabicText = (text: string) => {
-    // Simple Arabic text reversal for better PDF display
-    // This is a basic implementation - for complex text you might need a more sophisticated solution
-    const arabicRegex = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
-    
-    if (arabicRegex.test(text)) {
-      // Split by spaces and reverse word order for RTL
-      return text.split(' ').reverse().join(' ');
-    }
-    return text;
-  };
-
-  const generatePDFContent = (attempt: ExamAttempt, answers: UserAnswer[]) => {
-    const doc = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: 'a4'
-    });
-    
-    // Set document properties
-    doc.setProperties({
-      title: `تقرير الامتحان - ${attempt.exam.title}`,
-      subject: 'تقرير نتائج الامتحان',
-      author: 'منصة بريد الجزائر',
-      creator: 'Algeria Post Exam Platform'
-    });
-    
-    // Colors - properly typed as RGB arrays
-    const primaryColor: [number, number, number] = [0, 166, 81]; // Algeria green
-    const successColor: [number, number, number] = [34, 197, 94];
-    const errorColor: [number, number, number] = [239, 68, 68];
-    const grayColor: [number, number, number] = [75, 85, 99];
-    
-    let yPosition = 20;
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const margin = 20;
-    const contentWidth = pageWidth - (margin * 2);
-    
-    // Header Section
-    doc.setFillColor(...primaryColor);
-    doc.rect(0, 0, pageWidth, 40, 'F');
-    
-    // Title
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(18);
-    doc.setFont('helvetica', 'bold');
-    doc.text('منصة امتحانات بريد الجزائر', pageWidth - margin, 15, { align: 'right' });
-    
-    doc.setFontSize(14);
-    doc.text('تقرير نتائج الامتحان', pageWidth - margin, 25, { align: 'right' });
-    
-    yPosition = 50;
-    
-    // Exam Information Box
-    doc.setFillColor(248, 250, 252);
-    doc.rect(margin, yPosition, contentWidth, 35, 'F');
-    doc.setDrawColor(226, 232, 240);
-    doc.rect(margin, yPosition, contentWidth, 35, 'S');
-    
-    doc.setTextColor(0, 0, 0);
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.text('عنوان الامتحان:', pageWidth - margin - 5, yPosition + 8, { align: 'right' });
-    doc.setFont('helvetica', 'normal');
-    const examTitle = reverseArabicText(attempt.exam.title);
-    doc.text(examTitle, pageWidth - margin - 5, yPosition + 15, { align: 'right' });
-    
-    doc.setFont('helvetica', 'bold');
-    doc.text('تاريخ الإجراء:', pageWidth - margin - 5, yPosition + 22, { align: 'right' });
-    doc.setFont('helvetica', 'normal');
-    const examDate = new Date(attempt.completed_at).toLocaleDateString('ar-SA', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-    doc.text(examDate, pageWidth - margin - 5, yPosition + 29, { align: 'right' });
-    
-    yPosition += 45;
-    
-    // Results Summary
-    const passThreshold = 50;
-    const isPassed = attempt.percentage >= passThreshold;
-    const resultColor = isPassed ? successColor : errorColor;
-    
-    doc.setFillColor(...resultColor);
-    doc.rect(margin, yPosition, contentWidth, 25, 'F');
-    
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(16);
-    doc.setFont('helvetica', 'bold');
-    const resultText = isPassed ? '✅ نجح' : '❌ راسب';
-    doc.text(resultText, pageWidth / 2, yPosition + 8, { align: 'center' });
-    
-    doc.setFontSize(14);
-    const scoreText = `${attempt.score}/${answers.length} - ${Math.round(attempt.percentage)}%`;
-    doc.text(`النتيجة: ${scoreText}`, pageWidth / 2, yPosition + 18, { align: 'center' });
-    
-    yPosition += 35;
-    
-    // Questions Section Header
-    doc.setTextColor(0, 0, 0);
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
-    doc.text('تفاصيل الأسئلة والإجابات', pageWidth - margin, yPosition, { align: 'right' });
-    
-    // Underline
-    doc.setDrawColor(...primaryColor);
-    doc.setLineWidth(0.5);
-    doc.line(margin, yPosition + 2, pageWidth - margin, yPosition + 2);
-    
-    yPosition += 15;
-    
-    // Questions and Answers
-    answers.forEach((answer, index) => {
-      // Check if we need a new page
-      if (yPosition > 250) {
-        doc.addPage();
-        yPosition = 20;
-      }
-      
-      // Question Box
-      const questionHeight = 25;
-      doc.setFillColor(249, 250, 251);
-      doc.rect(margin, yPosition, contentWidth, questionHeight, 'F');
-      doc.setDrawColor(209, 213, 219);
-      doc.rect(margin, yPosition, contentWidth, questionHeight, 'S');
-      
-      // Question Number and Text
-      doc.setTextColor(0, 0, 0);
-      doc.setFontSize(11);
-      doc.setFont('helvetica', 'bold');
-      doc.text(`السؤال ${index + 1}:`, pageWidth - margin - 5, yPosition + 8, { align: 'right' });
-      
-      doc.setFont('helvetica', 'normal');
-      const questionText = reverseArabicText(answer.question.question_text);
-      const questionLines = doc.splitTextToSize(questionText, contentWidth - 20);
-      doc.text(questionLines as string[], pageWidth - margin - 5, yPosition + 15, { align: 'right' });
-      
-      yPosition += questionHeight + 5;
-      
-      // User's Answer
-      const selectedAnswer = answer.question.answers.find(a => a.id === answer.selected_answer_id);
-      const userAnswerColor = answer.is_correct ? successColor : errorColor;
-      
-      doc.setFillColor(userAnswerColor[0], userAnswerColor[1], userAnswerColor[2], 0.1);
-      doc.rect(margin + 10, yPosition, contentWidth - 20, 15, 'F');
-      
-      doc.setTextColor(...userAnswerColor);
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'bold');
-      doc.text('إجابتك:', pageWidth - margin - 15, yPosition + 6, { align: 'right' });
-      
-      doc.setFont('helvetica', 'normal');
-      const userAnswerText = selectedAnswer?.answer_text || 'لم يتم الإجابة';
-      const reversedUserAnswer = reverseArabicText(userAnswerText);
-      doc.text(reversedUserAnswer, pageWidth - margin - 15, yPosition + 12, { align: 'right' });
-      
-      yPosition += 20;
-      
-      // Correct Answer (if user was wrong)
-      if (!answer.is_correct) {
-        const correctAnswer = answer.question.answers.find(a => a.is_correct);
-        
-        doc.setFillColor(successColor[0], successColor[1], successColor[2], 0.1);
-        doc.rect(margin + 10, yPosition, contentWidth - 20, 15, 'F');
-        
-        doc.setTextColor(...successColor);
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'bold');
-        doc.text('الإجابة الصحيحة:', pageWidth - margin - 15, yPosition + 6, { align: 'right' });
-        
-        doc.setFont('helvetica', 'normal');
-        const correctAnswerText = correctAnswer?.answer_text || 'غير محدد';
-        const reversedCorrectAnswer = reverseArabicText(correctAnswerText);
-        doc.text(reversedCorrectAnswer, pageWidth - margin - 15, yPosition + 12, { align: 'right' });
-        
-        yPosition += 20;
-      }
-      
-      yPosition += 10; // Space between questions
-    });
-    
-    // Footer
-    const totalPages = doc.getNumberOfPages();
-    for (let i = 1; i <= totalPages; i++) {
-      doc.setPage(i);
-      
-      // Footer line
-      doc.setDrawColor(...grayColor);
-      doc.setLineWidth(0.3);
-      doc.line(margin, doc.internal.pageSize.getHeight() - 20, pageWidth - margin, doc.internal.pageSize.getHeight() - 20);
-      
-      // Footer text
-      doc.setTextColor(...grayColor);
-      doc.setFontSize(8);
-      doc.setFont('helvetica', 'normal');
-      doc.text('منصة امتحانات بريد الجزائر - تقرير مُولد تلقائياً', margin, doc.internal.pageSize.getHeight() - 10);
-      doc.text(`صفحة ${i} من ${totalPages}`, pageWidth - margin, doc.internal.pageSize.getHeight() - 10, { align: 'right' });
-    }
-    
-    return doc;
+    return { 
+      attempt, 
+      answers,
+      userProfile: userProfile ? { name: userProfile.full_name, email: userProfile.email } : undefined
+    };
   };
 
   const generatePDF = async (attemptId: string, action: 'view' | 'download' = 'view') => {
     setIsGenerating(true);
     try {
-      const { attempt, answers } = await fetchAttemptDetails(attemptId);
-      const doc = generatePDFContent(attempt as ExamAttempt, answers as UserAnswer[]);
+      const { attempt, answers, userProfile } = await fetchAttemptDetails(attemptId);
       
+      // Initialize the Arabic PDF generator
+      const generator = new ArabicPDFGenerator();
+      
+      // Generate PDF with proper Arabic support
+      const pdfBytes = await generator.generatePDF(
+        attempt as ExamAttempt,
+        answers as UserAnswer[],
+        userProfile
+      );
+
       if (action === 'view') {
         // Return blob for in-app viewing
-        const pdfBlob = doc.output('blob');
+        const pdfBlob = new Blob([pdfBytes], { type: 'application/pdf' });
         return pdfBlob;
       } else {
         // Download
-        doc.save(`تقرير-امتحان-${attemptId}-${new Date().toISOString().split('T')[0]}.pdf`);
+        const pdfBlob = new Blob([pdfBytes], { type: 'application/pdf' });
+        const url = URL.createObjectURL(pdfBlob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `تقرير-امتحان-${new Date().toISOString().split('T')[0]}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
         return null;
       }
     } catch (error) {

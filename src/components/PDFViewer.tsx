@@ -185,7 +185,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
               variant="outline"
               size="sm"
               onClick={zoomOut}
-              disabled={scale <= 0.5 || error}
+              disabled={scale <= 0.5 || error !== null}
             >
               <ZoomOut className="w-4 h-4" />
             </Button>
@@ -198,7 +198,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
               variant="outline"
               size="sm"
               onClick={zoomIn}
-              disabled={scale >= 2.0 || error}
+              disabled={scale >= 2.0 || error !== null}
             >
               <ZoomIn className="w-4 h-4" />
             </Button>
@@ -210,7 +210,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
                   variant="outline"
                   size="sm"
                   onClick={goToPrevPage}
-                  disabled={pageNumber <= 1 || error}
+                  disabled={pageNumber <= 1 || error !== null}
                 >
                   <ChevronRight className="w-4 h-4" />
                 </Button>
@@ -223,7 +223,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
                   variant="outline"
                   size="sm"
                   onClick={goToNextPage}
-                  disabled={pageNumber >= numPages || error}
+                  disabled={pageNumber >= numPages || error !== null}
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </Button>
