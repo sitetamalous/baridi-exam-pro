@@ -86,7 +86,6 @@ const Dashboard = () => {
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-green-50 to-blue-50 !font-arabic animate-fade-in pb-24"
       style={{ direction: 'rtl' }}>
-
       {/* رأس صفحة متجاوب واحترافي كمكون منفصل */}
       <DashboardHeader />
 
