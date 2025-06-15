@@ -92,11 +92,11 @@ export const usePDFGenerator = () => {
       creator: 'Algeria Post Exam Platform'
     });
     
-    // Colors
-    const primaryColor = [0, 166, 81]; // Algeria green
-    const successColor = [34, 197, 94];
-    const errorColor = [239, 68, 68];
-    const grayColor = [75, 85, 99];
+    // Colors - properly typed as RGB arrays
+    const primaryColor: [number, number, number] = [0, 166, 81]; // Algeria green
+    const successColor: [number, number, number] = [34, 197, 94];
+    const errorColor: [number, number, number] = [239, 68, 68];
+    const grayColor: [number, number, number] = [75, 85, 99];
     
     let yPosition = 20;
     const pageWidth = doc.internal.pageSize.getWidth();
@@ -209,7 +209,7 @@ export const usePDFGenerator = () => {
       const selectedAnswer = answer.question.answers.find(a => a.id === answer.selected_answer_id);
       const userAnswerColor = answer.is_correct ? successColor : errorColor;
       
-      doc.setFillColor(...userAnswerColor, 0.1);
+      doc.setFillColor(userAnswerColor[0], userAnswerColor[1], userAnswerColor[2], 0.1);
       doc.rect(margin + 10, yPosition, contentWidth - 20, 15, 'F');
       
       doc.setTextColor(...userAnswerColor);
@@ -227,7 +227,7 @@ export const usePDFGenerator = () => {
       if (!answer.is_correct) {
         const correctAnswer = answer.question.answers.find(a => a.is_correct);
         
-        doc.setFillColor(...successColor, 0.1);
+        doc.setFillColor(successColor[0], successColor[1], successColor[2], 0.1);
         doc.rect(margin + 10, yPosition, contentWidth - 20, 15, 'F');
         
         doc.setTextColor(...successColor);
