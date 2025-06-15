@@ -1,6 +1,6 @@
 
 import { PDFDocument, rgb, StandardFonts, PDFFont, PDFPage } from 'pdf-lib';
-import * as fontkit from 'fontkit';
+// We are removing the static fontkit import here.
 
 interface ExamData {
   id: string;
@@ -50,6 +50,10 @@ export class ArabicPDFGenerator {
   async initialize() {
     // Register fontkit for font embedding
     this.pdfDoc = await PDFDocument.create();
+    
+    // Dynamically import fontkit to handle CJS/ESM interop issues
+    const fontkitModule = await import('fontkit');
+    const fontkit = (fontkitModule as any).default || fontkitModule;
     this.pdfDoc.registerFontkit(fontkit);
 
     // Try to load Arabic font, fallback to Helvetica if not available
