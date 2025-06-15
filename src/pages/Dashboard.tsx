@@ -4,24 +4,17 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
-import { BookOpen, Clock, Trophy, Users, Loader2 } from 'lucide-react';
+import { BookOpen, Clock, Trophy, Users, Loader2, LogOut } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import BottomNav from '../components/BottomNav';
-
-interface Exam {
-  id: string;
-  title: string;
-  description: string | null;
-  duration_minutes: number;
-  is_published: boolean;
-  created_at: string;
-}
+import { useAuth } from '@/contexts/AuthContext';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [exams, setExams] = useState<Exam[]>([]);
+  const { user, logout } = useAuth();
+  const [exams, setExams] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -56,22 +49,28 @@ const Dashboard = () => {
     }
   };
 
-  const getDifficultyColor = (examId: string) => {
+  const getDifficultyColor = (examId) => {
     const index = exams.findIndex(exam => exam.id === examId);
     if (index < 3) return 'bg-green-500';
     if (index < 6) return 'bg-yellow-500';
     return 'bg-red-500';
   };
 
-  const getDifficultyText = (examId: string) => {
+  const getDifficultyText = (examId) => {
     const index = exams.findIndex(exam => exam.id === examId);
     if (index < 3) return 'سهل';
     if (index < 6) return 'متوسط';
     return 'صعب';
   };
 
-  const handleStartExam = (examId: string) => {
+  const handleStartExam = (examId) => {
     navigate(`/exam/${examId}`);
+  };
+
+  // رأس الصفحة الجديد المتجاوب صغير الحجم للموبايل
+  const handleLogout = async () => {
+    await logout();
+    navigate("/auth");
   };
 
   if (loading) {
@@ -87,41 +86,70 @@ const Dashboard = () => {
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-green-50 to-blue-50 !font-arabic animate-fade-in pb-24"
       style={{ direction: 'rtl' }}>
-      
-      {/* عنوان بارز أعلى الصفحة */}
-      <div className="w-full flex flex-col items-center mb-3 pt-2">
+
+      {/* رأس صفحة مخصص ومتجاوب */}
+      <div className="w-full flex flex-col items-center mb-1 pt-3 px-2">
+        <div className="w-full max-w-[430px] rounded-2xl bg-white/95 px-2 py-3 shadow border border-algeria-green/15">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div className="flex-1">
+              <h1 className="text-lg md:text-xl font-extrabold text-algeria-green leading-tight text-center sm:text-right">
+                منصة امتحانات بريد الجزائر
+              </h1>
+              <div className="mt-1 text-gray-700 text-xs text-center sm:text-right leading-none">
+                {user && (
+                  <>
+                    <span>مرحباً، {user?.user_metadata?.full_name || user?.email}</span>
+                  </>
+                )}
+              </div>
+            </div>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={handleLogout}
+              className="text-red-600 hover:bg-red-50 hover:text-red-700 !rounded-lg w-fit self-center sm:self-start flex items-center gap-1 transition-all"
+            >
+              <LogOut className="w-4 h-4" />
+              <span className="text-xs font-semibold">تسجيل الخروج</span>
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* عنوان بارز للوحة التحكم */}
+      <div className="w-full flex flex-col items-center mb-3 pt-1">
         <div className="rounded-xl bg-white/95 px-4 py-2 shadow border border-algeria-green/15 flex flex-col items-center w-full max-w-[390px]">
-          <h1 className="text-xl md:text-2xl font-extrabold text-algeria-green mb-0">
+          <h2 className="text-base md:text-xl font-extrabold text-algeria-green mb-0">
             لوحة تحكم الامتحانات
-          </h1>
+          </h2>
           <p className="text-gray-600 text-xs mt-1 text-center max-w-xs font-normal">اختر الامتحان الذي تريد أداؤه للتحضير للامتحان الرسمي</p>
         </div>
       </div>
 
-      {/* إحصاءات سريعة بتصميم بطاقات مرنة */}
-      <div className="grid grid-cols-2 gap-2 mb-4 mx-auto max-w-[400px] md:gap-4">
-        <Card className="rounded-xl shadow bg-white/90 border-0 p-0">
+      {/* إحصاءات سريعة - بطاقات عصرية متجاوبة */}
+      <div className="grid grid-cols-2 gap-2 mb-4 mx-auto max-w-[400px] md:gap-4 px-1">
+        <Card className="rounded-xl shadow bg-white/90 border-0 p-0 transition-all hover:shadow-lg hover:scale-[1.02]">
           <CardContent className="flex flex-col items-center justify-center p-3">
             <BookOpen className="h-7 w-7 text-algeria-green mb-1" />
             <p className="text-base font-bold text-gray-900">{exams.length}</p>
             <span className="text-xs text-gray-500">امتحانات متاحة</span>
           </CardContent>
         </Card>
-        <Card className="rounded-xl shadow bg-white/90 border-0 p-0">
+        <Card className="rounded-xl shadow bg-white/90 border-0 p-0 transition-all hover:shadow-lg hover:scale-[1.02]">
           <CardContent className="flex flex-col items-center justify-center p-3">
             <Clock className="h-7 w-7 text-algeria-blue mb-1" />
             <p className="text-base font-bold text-gray-900">60</p>
             <span className="text-xs text-gray-500">دقيقة لكل امتحان</span>
           </CardContent>
         </Card>
-        <Card className="rounded-xl shadow bg-white/90 border-0 p-0">
+        <Card className="rounded-xl shadow bg-white/90 border-0 p-0 transition-all hover:shadow-lg hover:scale-[1.02]">
           <CardContent className="flex flex-col items-center justify-center p-3">
             <Trophy className="h-7 w-7 text-algeria-gold mb-1" />
             <p className="text-base font-bold text-gray-900">50</p>
             <span className="text-xs text-gray-500">سؤال في كل امتحان</span>
           </CardContent>
         </Card>
-        <Card className="rounded-xl shadow bg-white/90 border-0 p-0">
+        <Card className="rounded-xl shadow bg-white/90 border-0 p-0 transition-all hover:shadow-lg hover:scale-[1.02]">
           <CardContent className="flex flex-col items-center justify-center p-3">
             <Users className="h-7 w-7 text-algeria-red mb-1" />
             <p className="text-base font-bold text-gray-900">4</p>
@@ -179,7 +207,7 @@ const Dashboard = () => {
         </Card>
       )}
 
-      {/* تعليمات الامتحان بشكل هادئ واحترافي */}
+      {/* تعليمات الامتحان */}
       <Card className="bg-blue-50/75 border-blue-200 mt-7 rounded-2xl shadow max-w-[430px] mx-auto">
         <CardHeader className="pb-2 pt-4 px-5">
           <CardTitle className="text-algeria-blue text-right text-base font-bold">
