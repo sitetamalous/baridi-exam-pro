@@ -37,7 +37,6 @@ const Dashboard = () => {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching exams:', error);
         toast({
           variant: "destructive",
           title: "خطأ في تحميل الامتحانات",
@@ -45,10 +44,8 @@ const Dashboard = () => {
         });
         return;
       }
-
       setExams(data || []);
     } catch (error) {
-      console.error('Error fetching exams:', error);
       toast({
         variant: "destructive",
         title: "خطأ في تحميل الامتحانات",
@@ -88,78 +85,79 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="relative pb-24 pt-5 px-1 min-h-screen bg-gradient-to-br from-green-50 to-blue-50 !font-arabic animate-fade-in"
+    <div className="relative min-h-screen bg-gradient-to-br from-green-50 to-blue-50 !font-arabic animate-fade-in pb-24"
       style={{ direction: 'rtl' }}>
-      {/* لا يوجد header أو navigation bar */}
-
-      {/* عنوان وإرشادات صغيرة للموبايل تظهر بشكل حديث */}
-      <div className="flex flex-col items-center mb-5">
-        <h1 className="text-2xl font-extrabold text-algeria-green mb-1 mt-1 tracking-tight rounded-lg shadow-sm px-3 py-2 bg-white/90 border border-algeria-green/20">
-          الامتحانات
-        </h1>
-        <p className="text-gray-600 text-sm mb-1 text-center max-w-xs bg-white/60 rounded px-2 font-medium shadow">
-          حضّر نفسك للامتحان الرسمي! اختر أي امتحان تريد.
-        </p>
+      
+      {/* عنوان بارز أعلى الصفحة */}
+      <div className="w-full flex flex-col items-center mb-3 pt-2">
+        <div className="rounded-xl bg-white/95 px-4 py-2 shadow border border-algeria-green/15 flex flex-col items-center w-full max-w-[390px]">
+          <h1 className="text-xl md:text-2xl font-extrabold text-algeria-green mb-0">
+            لوحة تحكم الامتحانات
+          </h1>
+          <p className="text-gray-600 text-xs mt-1 text-center max-w-xs font-normal">اختر الامتحان الذي تريد أداؤه للتحضير للامتحان الرسمي</p>
+        </div>
       </div>
 
-      {/* احصائيات بشكل حديث وعصري مع تأثيرات تفاعلية */}
-      <div className="grid grid-cols-2 gap-2 mb-4 md:grid-cols-4 md:gap-4">
-        <Card className="rounded-2xl shadow hover:scale-105 hover:shadow-lg transition-transform border-0 bg-white/95">
-          <CardContent className="flex flex-col items-center justify-center p-3 md:p-6">
-            <BookOpen className="h-8 w-8 text-algeria-green mb-1" />
-            <p className="text-lg font-bold text-gray-900">{exams.length}</p>
-            <p className="text-xs text-gray-600">امتحانات متاحة</p>
+      {/* إحصاءات سريعة بتصميم بطاقات مرنة */}
+      <div className="grid grid-cols-2 gap-2 mb-4 mx-auto max-w-[400px] md:gap-4">
+        <Card className="rounded-xl shadow bg-white/90 border-0 p-0">
+          <CardContent className="flex flex-col items-center justify-center p-3">
+            <BookOpen className="h-7 w-7 text-algeria-green mb-1" />
+            <p className="text-base font-bold text-gray-900">{exams.length}</p>
+            <span className="text-xs text-gray-500">امتحانات متاحة</span>
           </CardContent>
         </Card>
-        <Card className="rounded-2xl shadow hover:scale-105 hover:shadow-lg transition-transform border-0 bg-white/95">
-          <CardContent className="flex flex-col items-center justify-center p-3 md:p-6">
-            <Clock className="h-8 w-8 text-algeria-blue mb-1" />
-            <p className="text-lg font-bold text-gray-900">60</p>
-            <p className="text-xs text-gray-600">دقيقة لكل امتحان</p>
+        <Card className="rounded-xl shadow bg-white/90 border-0 p-0">
+          <CardContent className="flex flex-col items-center justify-center p-3">
+            <Clock className="h-7 w-7 text-algeria-blue mb-1" />
+            <p className="text-base font-bold text-gray-900">60</p>
+            <span className="text-xs text-gray-500">دقيقة لكل امتحان</span>
           </CardContent>
         </Card>
-        <Card className="rounded-2xl shadow hover:scale-105 hover:shadow-lg transition-transform border-0 bg-white/95">
-          <CardContent className="flex flex-col items-center justify-center p-3 md:p-6">
-            <Trophy className="h-8 w-8 text-algeria-gold mb-1" />
-            <p className="text-lg font-bold text-gray-900">50</p>
-            <p className="text-xs text-gray-600">سؤال في كل امتحان</p>
+        <Card className="rounded-xl shadow bg-white/90 border-0 p-0">
+          <CardContent className="flex flex-col items-center justify-center p-3">
+            <Trophy className="h-7 w-7 text-algeria-gold mb-1" />
+            <p className="text-base font-bold text-gray-900">50</p>
+            <span className="text-xs text-gray-500">سؤال في كل امتحان</span>
           </CardContent>
         </Card>
-        <Card className="rounded-2xl shadow hover:scale-105 hover:shadow-lg transition-transform border-0 bg-white/95">
-          <CardContent className="flex flex-col items-center justify-center p-3 md:p-6">
-            <Users className="h-8 w-8 text-algeria-red mb-1" />
-            <p className="text-lg font-bold text-gray-900">4</p>
-            <p className="text-xs text-gray-600">خيارات لكل سؤال</p>
+        <Card className="rounded-xl shadow bg-white/90 border-0 p-0">
+          <CardContent className="flex flex-col items-center justify-center p-3">
+            <Users className="h-7 w-7 text-algeria-red mb-1" />
+            <p className="text-base font-bold text-gray-900">4</p>
+            <span className="text-xs text-gray-500">خيارات لكل سؤال</span>
           </CardContent>
         </Card>
       </div>
 
-      {/* قائمة الامتحانات بشكل بطاقات متجاوبة عصرية */}
+      {/* قائمة الامتحانات */}
       {exams.length > 0 ? (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 mb-6">
+        <div className="flex flex-col gap-4 mb-6 mx-auto w-full max-w-[450px] px-2">
           {exams.map((exam) => (
-            <Card key={exam.id} className="transition-all rounded-2xl shadow-md hover:shadow-xl hover:scale-105 bg-white border-0 relative overflow-hidden cursor-pointer group animate-fade-in">
-              <CardHeader className="pb-2">
+            <Card key={exam.id} 
+              className="rounded-2xl shadow-md border-0 relative overflow-hidden cursor-pointer animate-fade-in transition-all hover:scale-[1.025] group 
+              bg-gradient-to-br from-white/90 to-blue-50/55">
+              <CardHeader className="pb-2 pt-3 px-4">
                 <div className="flex justify-between items-start">
                   <CardTitle className="text-base text-right font-bold leading-tight group-hover:text-algeria-green transition-colors">
                     {exam.title}
                   </CardTitle>
-                  <Badge className={`${getDifficultyColor(exam.id)} text-white px-3 py-1 text-xs rounded-xl shadow`}>
+                  <Badge className={`${getDifficultyColor(exam.id)} text-white px-3 py-1 text-xs rounded-xl drop-shadow`}>
                     {getDifficultyText(exam.id)}
                   </Badge>
                 </div>
-                <CardDescription className="text-right font-normal text-gray-500/90 group-hover:text-gray-700 transition-colors">
+                <CardDescription className="text-right font-normal text-gray-500/90 group-hover:text-gray-700 transition-colors mt-1">
                   {exam.description || "امتحان تجريبي شامل لتقييم معرفتك"}
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-1 pb-4 px-4">
                 <div className="flex items-center justify-between text-xs text-gray-600 mb-2">
-                  <span className="px-2 py-1 rounded-lg bg-blue-50">50 سؤال</span>
-                  <span className="px-2 py-1 rounded-lg bg-green-50">{exam.duration_minutes} دقيقة</span>
+                  <span className="px-2 py-[2px] rounded-md bg-blue-50 font-medium">50 سؤال</span>
+                  <span className="px-2 py-[2px] rounded-md bg-green-50 font-medium">{exam.duration_minutes} دقيقة</span>
                 </div>
                 <Button
                   onClick={() => handleStartExam(exam.id)}
-                  className="w-full bg-algeria-green hover:bg-green-700 text-white mt-2 font-bold rounded-xl shadow hover:scale-105 transition-all text-base py-2"
+                  className="w-full bg-algeria-green hover:bg-green-700 text-white font-bold rounded-xl shadow hover:scale-105 transition-all text-base py-2 mt-2"
                 >
                   بدء الامتحان
                 </Button>
@@ -168,7 +166,7 @@ const Dashboard = () => {
           ))}
         </div>
       ) : (
-        <Card className="text-center py-14 my-6 rounded-2xl shadow bg-white/65 border-0">
+        <Card className="text-center py-14 my-6 rounded-2xl shadow bg-white/70 border-0 max-w-[420px] mx-auto">
           <CardContent>
             <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4 animate-pulse" />
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
@@ -181,15 +179,15 @@ const Dashboard = () => {
         </Card>
       )}
 
-      {/* تعليمات الامتحان - تظهر بشكل تفاعلي وجذاب */}
-      <Card className="bg-blue-50/60 border-blue-200 mt-6 rounded-2xl shadow">
-        <CardHeader className="pb-1">
+      {/* تعليمات الامتحان بشكل هادئ واحترافي */}
+      <Card className="bg-blue-50/75 border-blue-200 mt-7 rounded-2xl shadow max-w-[430px] mx-auto">
+        <CardHeader className="pb-2 pt-4 px-5">
           <CardTitle className="text-algeria-blue text-right text-base font-bold">
             تعليمات الامتحان
           </CardTitle>
         </CardHeader>
-        <CardContent className="text-right text-xs">
-          <ul className="space-y-1 text-gray-700">
+        <CardContent className="text-right text-xs px-5 pb-4 pt-0">
+          <ul className="space-y-1 text-gray-800 font-medium">
             <li>• كل امتحان يحتوي على 50 سؤال اختيار من متعدد</li>
             <li>• المدة المحددة لكل امتحان هي 60 دقيقة</li>
             <li>• يجب الإجابة على جميع الأسئلة قبل انتهاء الوقت</li>
@@ -198,6 +196,7 @@ const Dashboard = () => {
           </ul>
         </CardContent>
       </Card>
+      
       {/* Bottom Navigation */}
       <BottomNav />
     </div>
