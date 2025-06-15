@@ -1,5 +1,4 @@
-
-import React from "react";
+import React, { useState } from "react";
 import { useStatistics } from "@/hooks/useStatistics";
 import {
   BarChart,
@@ -20,6 +19,8 @@ import { format } from "date-fns";
 import { arDZ } from "date-fns/locale/ar-DZ";
 import classNames from "clsx";
 import { usePDFGenerator } from "@/hooks/usePDFGenerator";
+import PDFViewer from "@/components/PDFViewer";
+import { useToast } from "@/hooks/use-toast";
 
 const MotivationMessage: React.FC<{ attempts: any[] }> = ({ attempts }) => {
   if (!attempts || attempts.length < 2) return null;
@@ -41,6 +42,13 @@ const MotivationMessage: React.FC<{ attempts: any[] }> = ({ attempts }) => {
 const Statistics: React.FC = () => {
   const { data, isLoading, error } = useStatistics();
   const { generatePDF, downloadPDF, isGenerating } = usePDFGenerator();
+  const { toast } = useToast();
+  
+  // PDF Viewer state
+  const [pdfViewerOpen, setPdfViewerOpen] = useState(false);
+  const [currentPdfBlob, setCurrentPdfBlob] = useState<Blob | null>(null);
+  const [currentExamTitle, setCurrentExamTitle] = useState('');
+  const [currentAttemptId, setCurrentAttemptId] = useState('');
 
   // تجهيز بيانات الرسم البياني
   let chartData: { name: string; النتيجة: number; التاريخ: string }[] = [];
@@ -56,24 +64,56 @@ const Statistics: React.FC = () => {
       .reverse();
   }
 
-  const handleViewPDF = async (attemptId: string) => {
+  const handleViewPDF = async (attemptId: string, examTitle: string) => {
     try {
-      await generatePDF(attemptId, 'view');
+      const pdfBlob = await generatePDF(attemptId, 'view') as Blob;
+      if (pdfBlob) {
+        setCurrentPdfBlob(pdfBlob);
+        setCurrentExamTitle(examTitle);
+        setCurrentAttemptId(attemptId);
+        setPdfViewerOpen(true);
+        
+        toast({
+          title: "تم إنشاء التقرير",
+          description: "تم إنشاء تقرير PDF بنجاح"
+        });
+      }
     } catch (error) {
-      console.error('Error viewing PDF:', error);
+      console.error('Error generating PDF:', error);
+      toast({
+        variant: "destructive",
+        title: "خطأ في إنشاء التقرير",
+        description: "حدث خطأ أثناء إنشاء تقرير PDF"
+      });
     }
   };
 
   const handleDownloadPDF = async (attemptId: string) => {
     try {
       await downloadPDF(attemptId);
+      toast({
+        title: "تم تحميل التقرير",
+        description: "تم تحميل تقرير PDF بنجاح"
+      });
     } catch (error) {
       console.error('Error downloading PDF:', error);
+      toast({
+        variant: "destructive",
+        title: "خطأ في تحميل التقرير",
+        description: "حدث خطأ أثناء تحميل تقرير PDF"
+      });
     }
   };
 
   const handleRetakeExam = (examId: string) => {
     window.location.href = `/exam/${examId}`;
+  };
+
+  const closePdfViewer = () => {
+    setPdfViewerOpen(false);
+    setCurrentPdfBlob(null);
+    setCurrentExamTitle('');
+    setCurrentAttemptId('');
   };
 
   if (error) {
@@ -284,7 +324,7 @@ const Statistics: React.FC = () => {
                       size="sm"
                       variant="outline"
                       className="flex-1 text-xs"
-                      onClick={() => handleViewPDF(attempt.id)}
+                      onClick={() => handleViewPDF(attempt.id, attempt.exam?.title || 'امتحان')}
                       disabled={isGenerating}
                     >
                       <Eye className="w-4 h-4 ml-1" />
@@ -325,6 +365,16 @@ const Statistics: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* PDF Viewer Modal */}
+      <PDFViewer
+        isOpen={pdfViewerOpen}
+        onClose={closePdfViewer}
+        pdfBlob={currentPdfBlob}
+        examTitle={currentExamTitle}
+        onDownload={() => handleDownloadPDF(currentAttemptId)}
+        isGenerating={isGenerating}
+      />
 
       <BottomNav />
     </div>

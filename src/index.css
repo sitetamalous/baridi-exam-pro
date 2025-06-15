@@ -1,5 +1,6 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -68,7 +69,7 @@
   
   body {
     @apply bg-background text-foreground;
-    font-family: 'Noto Sans Arabic', sans-serif;
+    font-family: 'Noto Sans Arabic', 'Amiri', sans-serif;
   }
 
   html {
@@ -223,27 +224,40 @@
       page-break-before: always;
     }
   }
-}
 
-/* Responsive breakpoints */
-@screen xs {
-  /* 480px and up */
-}
+  /* PDF Viewer Styles */
+  .react-pdf__Page {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 16px;
+  }
 
-@screen sm {
-  /* 640px and up */
-}
+  .react-pdf__Page__canvas {
+    display: block;
+    margin: 0 auto;
+  }
 
-@screen md {
-  /* 768px and up */
-}
+  /* Arabic PDF Support */
+  .pdf-arabic {
+    font-family: 'Amiri', 'Noto Sans Arabic', Arial, sans-serif;
+    direction: rtl;
+    text-align: right;
+  }
 
-@screen lg {
-  /* 1024px and up */
-}
+  /* Responsive PDF Container */
+  .pdf-container {
+    max-width: 100%;
+    overflow-x: auto;
+  }
 
-@screen xl {
-  /* 1280px and up */
+  @media (max-width: 768px) {
+    .pdf-container {
+      padding: 8px;
+    }
+    
+    .react-pdf__Page {
+      margin-bottom: 8px;
+    }
+  }
 }
 
 /* Custom utilities */
@@ -255,4 +269,26 @@
   background: rgba(255, 255, 255, 0.25);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+/* Enhanced PDF Viewer */
+.pdf-viewer-modal {
+  direction: rtl;
+}
+
+.pdf-viewer-controls {
+  background: linear-gradient(to bottom, rgba(255,255,255,0.95), rgba(249,250,251,0.95));
+  backdrop-filter: blur(8px);
+}
+
+/* Mobile PDF optimizations */
+@media (max-width: 640px) {
+  .pdf-viewer-controls {
+    padding: 8px;
+    flex-wrap: wrap;
+  }
+  
+  .pdf-viewer-controls > div {
+    margin-bottom: 8px;
+  }
 }
