@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
@@ -9,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import BottomNav from '../components/BottomNav';
 import { useAuth } from '@/contexts/AuthContext';
+import DashboardHeader from "../components/DashboardHeader";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -87,36 +87,10 @@ const Dashboard = () => {
     <div className="relative min-h-screen bg-gradient-to-br from-green-50 to-blue-50 !font-arabic animate-fade-in pb-24"
       style={{ direction: 'rtl' }}>
 
-      {/* رأس صفحة مخصص ومتجاوب */}
-      <div className="w-full flex flex-col items-center mb-1 pt-3 px-2">
-        <div className="w-full max-w-[430px] rounded-2xl bg-white/95 px-2 py-3 shadow border border-algeria-green/15">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-            <div className="flex-1">
-              <h1 className="text-lg md:text-xl font-extrabold text-algeria-green leading-tight text-center sm:text-right">
-                منصة امتحانات بريد الجزائر
-              </h1>
-              <div className="mt-1 text-gray-700 text-xs text-center sm:text-right leading-none">
-                {user && (
-                  <>
-                    <span>مرحباً، {user?.user_metadata?.full_name || user?.email}</span>
-                  </>
-                )}
-              </div>
-            </div>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={handleLogout}
-              className="text-red-600 hover:bg-red-50 hover:text-red-700 !rounded-lg w-fit self-center sm:self-start flex items-center gap-1 transition-all"
-            >
-              <LogOut className="w-4 h-4" />
-              <span className="text-xs font-semibold">تسجيل الخروج</span>
-            </Button>
-          </div>
-        </div>
-      </div>
+      {/* رأس صفحة متجاوب واحترافي كمكون منفصل */}
+      <DashboardHeader />
 
-      {/* عنوان بارز للوحة التحكم */}
+      {/* عنوان رئيسي للوحة التحكم */}
       <div className="w-full flex flex-col items-center mb-3 pt-1">
         <div className="rounded-xl bg-white/95 px-4 py-2 shadow border border-algeria-green/15 flex flex-col items-center w-full max-w-[390px]">
           <h2 className="text-base md:text-xl font-extrabold text-algeria-green mb-0">
@@ -126,7 +100,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* إحصاءات سريعة - بطاقات عصرية متجاوبة */}
+      {/* إحصاءات وبطاقات ... */}
       <div className="grid grid-cols-2 gap-2 mb-4 mx-auto max-w-[400px] md:gap-4 px-1">
         <Card className="rounded-xl shadow bg-white/90 border-0 p-0 transition-all hover:shadow-lg hover:scale-[1.02]">
           <CardContent className="flex flex-col items-center justify-center p-3">
@@ -158,7 +132,7 @@ const Dashboard = () => {
         </Card>
       </div>
 
-      {/* قائمة الامتحانات */}
+      {/* قائمة الامتحانات ... */}
       {exams.length > 0 ? (
         <div className="flex flex-col gap-4 mb-6 mx-auto w-full max-w-[450px] px-2">
           {exams.map((exam) => (
@@ -207,7 +181,7 @@ const Dashboard = () => {
         </Card>
       )}
 
-      {/* تعليمات الامتحان */}
+      {/* تعليمات الامتحان ... */}
       <Card className="bg-blue-50/75 border-blue-200 mt-7 rounded-2xl shadow max-w-[430px] mx-auto">
         <CardHeader className="pb-2 pt-4 px-5">
           <CardTitle className="text-algeria-blue text-right text-base font-bold">
@@ -232,4 +206,3 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-
