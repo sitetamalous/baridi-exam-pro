@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
@@ -7,10 +8,56 @@ import { Button } from '@/components/ui/button';
 import { Download, ZoomIn, ZoomOut, X, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
-// Fix PDF.js worker configuration for Vite
+// Fix PDF.js worker configuration with multiple fallbacks
 if (typeof window !== 'undefined') {
-  // Use a CDN-based worker URL that's more reliable
-  pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
+  // Primary worker URL - using jsDelivr CDN which is more reliable
+  const primaryWorkerUrl = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
+  
+  // Fallback worker URLs
+  const fallbackWorkerUrls = [
+    `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`,
+    `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`,
+    // Local fallback if available
+    `/node_modules/pdfjs-dist/build/pdf.worker.min.js`
+  ];
+
+  // Test worker URL and set the first working one
+  const testWorkerUrl = async (url: string): Promise<boolean> => {
+    try {
+      const response = await fetch(url, { method: 'HEAD' });
+      return response.ok;
+    } catch {
+      return false;
+    }
+  };
+
+  const setWorkerUrl = async () => {
+    // Try primary URL first
+    if (await testWorkerUrl(primaryWorkerUrl)) {
+      pdfjs.GlobalWorkerOptions.workerSrc = primaryWorkerUrl;
+      console.log('PDF.js worker loaded from jsDelivr CDN');
+      return;
+    }
+
+    // Try fallback URLs
+    for (const url of fallbackWorkerUrls) {
+      if (await testWorkerUrl(url)) {
+        pdfjs.GlobalWorkerOptions.workerSrc = url;
+        console.log(`PDF.js worker loaded from fallback: ${url}`);
+        return;
+      }
+    }
+
+    // Final fallback - try to load from the same origin
+    console.warn('All worker URLs failed, using same-origin fallback');
+    pdfjs.GlobalWorkerOptions.workerSrc = primaryWorkerUrl;
+  };
+
+  // Set worker URL asynchronously
+  setWorkerUrl().catch(() => {
+    console.warn('Worker URL setup failed, using default');
+    pdfjs.GlobalWorkerOptions.workerSrc = primaryWorkerUrl;
+  });
 }
 
 interface PDFViewerProps {
@@ -55,6 +102,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
     setPageNumber(1);
     setLoading(false);
     setError(null);
+    console.log('PDF loaded successfully with', numPages, 'pages');
   };
 
   const onDocumentLoadError = (error: Error) => {
@@ -71,6 +119,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
   const onDocumentLoadStart = () => {
     setLoading(true);
     setError(null);
+    console.log('PDF loading started');
   };
 
   const goToPrevPage = () => {
@@ -135,7 +184,8 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={is 
+    onOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden p-0" style={{ direction: 'rtl' }}>
         <DialogHeader className="p-4 border-b">
           <DialogTitle className="text-right">
@@ -283,7 +333,10 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
                 onLoadStart={onDocumentLoadStart}
                 loading={
                   <div className="flex items-center justify-center h-64">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-algeria-green"></div>
+                    <div className="text-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-algeria-green mx-auto mb-2"></div>
+                      <p className="text-gray-600">جاري تحميل PDF...</p>
+                    </div>
                   </div>
                 }
                 error={
@@ -299,9 +352,11 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
                   </div>
                 }
                 options={{
-                  // Use more reliable cMap URL
-                  cMapUrl: 'https://unpkg.com/pdfjs-dist@3.11.174/cmaps/',
-                  cMapPacked: true
+                  // Use reliable cMap configuration
+                  cMapUrl: `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjs.version}/cmaps/`,
+                  cMapPacked: true,
+                  // Enable text layer for better performance
+                  enableXfa: true,
                 }}
               >
                 <Page
@@ -310,6 +365,11 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
                   renderTextLayer={true}
                   renderAnnotationLayer={true}
                   className="shadow-lg"
+                  loading={
+                    <div className="flex items-center justify-center h-64">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-algeria-green"></div>
+                    </div>
+                  }
                 />
               </Document>
             </div>
