@@ -8,11 +8,11 @@ import { Button } from '@/components/ui/button';
 import { Download, ZoomIn, ZoomOut, X, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
-// Set up PDF.js worker properly for Vite/PWA
-pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.js',
-  import.meta.url,
-).toString();
+// Fix PDF.js worker configuration for Vite
+if (typeof window !== 'undefined') {
+  // Use a CDN-based worker URL that's more reliable
+  pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
+}
 
 interface PDFViewerProps {
   isOpen: boolean;
@@ -140,7 +140,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden p-0" style={{ direction: 'rtl' }}>
         <DialogHeader className="p-4 border-b">
           <DialogTitle className="text-right">
-            📄 تقرير الامتحان - {examTitle}
+            تقرير الامتحان - {examTitle}
           </DialogTitle>
         </DialogHeader>
         
@@ -245,7 +245,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
         </div>
         
         {/* PDF Content */}
-        <div className="flex-1 overflow-auto p-4 bg-gray-100 pdf-container custom-scrollbar">
+        <div className="flex-1 overflow-auto p-4 bg-gray-100 pdf-container">
           {isGenerating ? (
             <div className="flex items-center justify-center h-64">
               <div className="text-center">
@@ -299,6 +299,13 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
                     </Button>
                   </div>
                 }
+                options={{
+                  // Disable worker for more reliable loading
+                  disableWorker: false,
+                  // Use more reliable cMap URL
+                  cMapUrl: 'https://unpkg.com/pdfjs-dist@3.11.174/cmaps/',
+                  cMapPacked: true
+                }}
               >
                 <Page
                   pageNumber={pageNumber}

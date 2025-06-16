@@ -20,6 +20,7 @@ import { arDZ } from "date-fns/locale/ar-DZ";
 import classNames from "clsx";
 import { usePDFGenerator } from "@/hooks/usePDFGenerator";
 import PDFViewer from "@/components/PDFViewer";
+import PDFTestComponent from "@/components/PDFTestComponent";
 import { useToast } from "@/hooks/use-toast";
 
 const MotivationMessage: React.FC<{ attempts: any[] }> = ({ attempts }) => {
@@ -145,6 +146,11 @@ const Statistics: React.FC = () => {
       {/* Mobile Header */}
       <div className="sm:hidden pt-4 px-4 mb-2">
         <h1 className="text-xl font-bold text-center text-algeria-green">📊 إحصائياتي</h1>
+      </div>
+
+      {/* PDF Test Component - for development/testing */}
+      <div className="mx-2 mb-4 sm:max-w-4xl sm:mx-auto">
+        <PDFTestComponent />
       </div>
 
       {/* KPI Cards */}
