@@ -1,3 +1,4 @@
+
 import { PDFDocument, rgb, StandardFonts, PDFFont, PDFPage } from 'pdf-lib';
 
 interface ExamData {
@@ -52,8 +53,11 @@ export class ArabicPDFGenerator {
     
     try {
       // Dynamically import fontkit - it's a CommonJS module
-      const fontkit = await import('fontkit');
-      // Register fontkit - use the entire module, not default export
+      const fontkitModule = await import('fontkit');
+      // Access the default export or the module itself
+      const fontkit = fontkitModule.default || fontkitModule;
+      
+      // Register fontkit
       this.pdfDoc.registerFontkit(fontkit);
 
       console.log('Fontkit loaded successfully, attempting to load Arabic font...');
