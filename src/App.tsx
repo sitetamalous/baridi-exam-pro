@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -52,10 +53,8 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
+        <BrowserRouter>
+          <TooltipProvider>
             <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 rtl">
               {!isOnline && (
                 <div className="bg-yellow-500 text-white text-center py-2 px-4 text-sm">
@@ -125,8 +124,11 @@ const App = () => {
               <BottomNav />
               <PWAInstallBanner />
             </div>
-          </BrowserRouter>
-        </TooltipProvider>
+            
+            <Toaster />
+            <Sonner />
+          </TooltipProvider>
+        </BrowserRouter>
       </AuthProvider>
     </QueryClientProvider>
   );
