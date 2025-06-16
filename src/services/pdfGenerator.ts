@@ -1,8 +1,8 @@
-import pdfMake from 'pdfmake/build/pdfmake';
-import pdfFonts from 'pdfmake/build/vfs_fonts';
+import * as pdfMake from 'pdfmake/build/pdfmake';
+import * as pdfFonts from 'pdfmake/build/vfs_fonts';
 
-// Initialize pdfMake with fonts
-pdfMake.vfs = pdfFonts.pdfMake.vfs;
+// Initialize pdfMake with built-in fonts
+(pdfMake as any).vfs = pdfFonts.pdfMake.vfs;
 
 // Define custom fonts with Arabic support
 const fonts = {
@@ -13,17 +13,27 @@ const fonts = {
     bolditalics: 'Roboto-MediumItalic.ttf'
   },
   Amiri: {
-    normal: '/fonts/amiri-regular.ttf',
-    bold: '/fonts/amiri-regular.ttf',
-    italics: '/fonts/amiri-regular.ttf',
-    bolditalics: '/fonts/amiri-regular.ttf'
+    normal: 'amiri-regular.ttf',
+    bold: 'amiri-bold.ttf',
+    italics: 'amiri-italic.ttf',
+    bolditalics: 'amiri-bolditalic.ttf'
   },
   NotoSansArabic: {
-    normal: '/fonts/noto-sans-arabic-regular.ttf',
-    bold: '/fonts/noto-sans-arabic-regular.ttf',
-    italics: '/fonts/noto-sans-arabic-regular.ttf',
-    bolditalics: '/fonts/noto-sans-arabic-regular.ttf'
+    normal: 'noto-sans-arabic-regular.ttf',
+    bold: 'noto-sans-arabic-bold.ttf',
+    italics: 'noto-sans-arabic-italic.ttf',
+    bolditalics: 'noto-sans-arabic-bolditalic.ttf'
   }
+};
+
+// Helper function to convert ArrayBuffer to base64
+const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return window.btoa(binary);
 };
 
 // Load fonts from public directory
@@ -34,7 +44,7 @@ const loadFont = async (url: string): Promise<string> => {
       throw new Error(`Failed to load font: ${url}`);
     }
     const arrayBuffer = await response.arrayBuffer();
-    const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+    const base64 = arrayBufferToBase64(arrayBuffer);
     return `data:font/truetype;base64,${base64}`;
   } catch (error) {
     console.warn(`Font loading failed for ${url}, using fallback`);
@@ -45,18 +55,22 @@ const loadFont = async (url: string): Promise<string> => {
 // Initialize fonts with base64 data
 const initializeFonts = async () => {
   try {
-    const [amiriFont, notoFont] = await Promise.all([
+    const [amiriRegular, amiriBold, notoRegular, notoBold] = await Promise.all([
       loadFont('/fonts/amiri-regular.ttf'),
-      loadFont('/fonts/noto-sans-arabic-regular.ttf')
+      loadFont('/fonts/amiri-bold.ttf'),
+      loadFont('/fonts/noto-sans-arabic-regular.ttf'),
+      loadFont('/fonts/noto-sans-arabic-bold.ttf')
     ]);
 
-    if (amiriFont) {
-      pdfMake.vfs['amiri-regular.ttf'] = amiriFont.split(',')[1];
-    }
-    if (notoFont) {
-      pdfMake.vfs['noto-sans-arabic-regular.ttf'] = notoFont.split(',')[1];
-    }
+    // Add fonts to VFS
+    Object.assign((pdfMake as any).vfs, {
+      'amiri-regular.ttf': amiriRegular.split(',')[1],
+      'amiri-bold.ttf': amiriBold.split(',')[1],
+      'noto-sans-arabic-regular.ttf': notoRegular.split(',')[1],
+      'noto-sans-arabic-bold.ttf': notoBold.split(',')[1]
+    });
 
+    // Set fonts configuration
     pdfMake.fonts = fonts;
   } catch (error) {
     console.error('Font initialization failed:', error);
@@ -131,7 +145,7 @@ export class PDFGenerator {
     const crossMark = '✗';
     const rightArrow = '←';
 
-    const docDefinition = {
+    const docDefinition: any = {
       pageSize: 'A4',
       pageMargins: [40, 60, 40, 60],
       defaultStyle: {
@@ -391,7 +405,8 @@ export class PDFGenerator {
 
     return new Promise((resolve, reject) => {
       try {
-        pdfMake.createPdf(docDefinition).getBlob((blob: Blob) => {
+        const pdfDocGenerator = pdfMake.createPdf(docDefinition);
+        pdfDocGenerator.getBlob((blob: Blob) => {
           resolve(blob);
         });
       } catch (error) {
