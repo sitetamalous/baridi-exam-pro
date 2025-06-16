@@ -19,7 +19,6 @@ import Exams from "./pages/Exams";
 import Statistics from "./pages/Statistics";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
-import PWAInstallBanner from "./components/PWAInstallBanner";
 import Layout from "./components/Layout";
 import BottomNav from "./components/BottomNav";
 import ExamReviewPage from "./pages/ExamReviewPage";
@@ -138,7 +137,6 @@ const App = () => {
 
               {/* Show BottomNav conditionally */}
               <ConditionalBottomNav />
-              <PWAInstallBanner />
             </div>
             
             <Toaster />
