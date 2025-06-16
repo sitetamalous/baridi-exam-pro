@@ -1,4 +1,3 @@
-
 import { PDFDocument, rgb, StandardFonts, PDFFont, PDFPage } from 'pdf-lib';
 // We are removing the static fontkit import here.
 
@@ -46,6 +45,7 @@ export class ArabicPDFGenerator {
   private margin = 40;
   private pageWidth = 0;
   private pageHeight = 0;
+  private hasArabicFont = false;
 
   async initialize() {
     // Register fontkit for font embedding
@@ -58,14 +58,26 @@ export class ArabicPDFGenerator {
 
     // Try to load Arabic font, fallback to Helvetica if not available
     try {
-      const arabicFontUrl = 'https://fonts.gstatic.com/s/cairo/v28/SLXjc1nY6HkvangtZmpQdkhzfH5lkSs2SgRjCAGMQ1z0hOA-a1bocoI.woff2';
-      const arabicFontBytes = await fetch(arabicFontUrl).then(res => res.arrayBuffer());
+      // Use a more reliable Arabic font source
+      const arabicFontUrl = 'https://fonts.gstatic.com/s/amiri/v27/J7aRnpd8CGxBHqUpvrIw74NL.woff2';
+      
+      console.log('Attempting to load Arabic font...');
+      const arabicFontBytes = await fetch(arabicFontUrl).then(res => {
+        if (!res.ok) {
+          throw new Error(`Font fetch failed: ${res.status}`);
+        }
+        return res.arrayBuffer();
+      });
+      
       this.arabicFont = await this.pdfDoc.embedFont(arabicFontBytes);
       this.boldFont = this.arabicFont; // Use same font for bold (we'll simulate with larger size)
+      this.hasArabicFont = true;
+      console.log('Arabic font loaded successfully');
     } catch (error) {
-      console.warn('Failed to load Arabic font, using Helvetica:', error);
+      console.warn('Failed to load Arabic font, using Latin text only:', error);
       this.arabicFont = await this.pdfDoc.embedFont(StandardFonts.Helvetica);
       this.boldFont = await this.pdfDoc.embedFont(StandardFonts.HelveticaBold);
+      this.hasArabicFont = false;
     }
 
     // Create first page
@@ -85,17 +97,59 @@ export class ArabicPDFGenerator {
     }
   }
 
-  // Proper Arabic text handling with RTL support
+  // Convert Arabic text to Latin equivalent if Arabic font is not available
+  private processText(text: string): string {
+    if (this.hasArabicFont) {
+      return text; // Return original text if we have Arabic font
+    }
+    
+    // If no Arabic font, convert to Latin equivalent
+    const arabicToLatin: { [key: string]: string } = {
+      'منصة امتحانات بريد الجزائر': 'Algeria Post Exam Platform',
+      'تقرير نتائج الامتحان': 'Exam Results Report',
+      'عنوان الامتحان:': 'Exam Title:',
+      'تاريخ الإجراء:': 'Date:',
+      'الطالب:': 'Student:',
+      'النتيجة:': 'Score:',
+      'نجح': 'Passed',
+      'راسب': 'Failed',
+      'تفاصيل الأسئلة والإجابات': 'Questions and Answers Details',
+      'السؤال': 'Question',
+      'إجابتك:': 'Your Answer:',
+      'الإجابة الصحيحة:': 'Correct Answer:',
+      'لم يتم الإجابة': 'Not Answered',
+      'غير محدد': 'Not Specified',
+      'منصة امتحانات بريد الجزائر - تقرير مُولد تلقائياً': 'Algeria Post Exam Platform - Auto-generated Report',
+      'صفحة': 'Page',
+      'من': 'of'
+    };
+    
+    // Check if the text has an exact translation
+    if (arabicToLatin[text]) {
+      return arabicToLatin[text];
+    }
+    
+    // For other text, remove Arabic characters and keep Latin/numbers
+    return text.replace(/[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/g, '?');
+  }
+
+  // Proper Arabic text handling with RTL support (only when Arabic font is available)
   private processArabicText(text: string): string {
+    const processedText = this.processText(text);
+    
+    if (!this.hasArabicFont) {
+      return processedText; // Return processed Latin text
+    }
+    
     // Basic Arabic text processing - in a production app, you'd use a proper BiDi library
     const arabicRegex = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
     
-    if (!arabicRegex.test(text)) {
-      return text; // Return as-is if no Arabic characters
+    if (!arabicRegex.test(processedText)) {
+      return processedText; // Return as-is if no Arabic characters
     }
 
     // Split text into words and reverse for RTL display
-    const words = text.split(' ');
+    const words = processedText.split(' ');
     const processedWords = words.map(word => {
       // Keep numbers and Latin text in their original order
       if (/^[0-9a-zA-Z%]+$/.test(word)) {
@@ -253,7 +307,7 @@ export class ArabicPDFGenerator {
       size: 12
     });
     infoY -= 20;
-    const examDate = new Date(attempt.completed_at).toLocaleDateString('ar-SA', {
+    const examDate = new Date(attempt.completed_at).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -284,7 +338,7 @@ export class ArabicPDFGenerator {
     this.checkPageSpace(80);
 
     const isPassed = attempt.percentage >= 50;
-    const resultColor = isPassed ? [0.13, 0.77, 0.37] : [0.94, 0.27, 0.27];
+    const resultColor: [number, number, number] = isPassed ? [0.13, 0.77, 0.37] : [0.94, 0.27, 0.27];
 
     // Results box
     this.currentPage.drawRectangle({
@@ -298,7 +352,7 @@ export class ArabicPDFGenerator {
     const centerX = this.pageWidth / 2;
     
     // Result status
-    const resultText = isPassed ? '✅ نجح' : '❌ راسب';
+    const resultText = isPassed ? 'Passed ✓' : 'Failed ✗';
     this.drawText(resultText, centerX, this.yPosition - 25, {
       size: 16,
       color: [1, 1, 1],
@@ -307,7 +361,7 @@ export class ArabicPDFGenerator {
     });
 
     // Score
-    const scoreText = `النتيجة: ${attempt.score}/${totalQuestions} - ${Math.round(attempt.percentage)}%`;
+    const scoreText = `Score: ${attempt.score}/${totalQuestions} - ${Math.round(attempt.percentage)}%`;
     this.drawText(scoreText, centerX, this.yPosition - 50, {
       size: 14,
       color: [1, 1, 1],
@@ -444,7 +498,8 @@ export class ArabicPDFGenerator {
       });
 
       // Footer text
-      page.drawText('منصة امتحانات بريد الجزائر - تقرير مُولد تلقائياً', {
+      const footerText = this.processText('منصة امتحانات بريد الجزائر - تقرير مُولد تلقائياً');
+      page.drawText(footerText, {
         x: this.margin,
         y: 15,
         size: 8,
@@ -453,7 +508,7 @@ export class ArabicPDFGenerator {
       });
 
       // Page number
-      const pageText = this.processArabicText(`صفحة ${pageIndex + 1} من ${pages.length}`);
+      const pageText = this.processText(`صفحة ${pageIndex + 1} من ${pages.length}`);
       page.drawText(pageText, {
         x: this.pageWidth - this.margin,
         y: 15,
