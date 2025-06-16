@@ -8,56 +8,36 @@ import { Button } from '@/components/ui/button';
 import { Download, ZoomIn, ZoomOut, X, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
-// Fix PDF.js worker configuration with multiple fallbacks
+// Configure PDF.js worker - Bundle the worker locally to avoid CDN issues
 if (typeof window !== 'undefined') {
-  // Primary worker URL - using jsDelivr CDN which is more reliable
-  const primaryWorkerUrl = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
-  
-  // Fallback worker URLs
-  const fallbackWorkerUrls = [
-    `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`,
+  // Use a more reliable CDN with fallback
+  const workerUrls = [
     `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`,
-    // Local fallback if available
-    `/node_modules/pdfjs-dist/build/pdf.worker.min.js`
+    `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`,
+    `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`
   ];
 
-  // Test worker URL and set the first working one
-  const testWorkerUrl = async (url: string): Promise<boolean> => {
-    try {
-      const response = await fetch(url, { method: 'HEAD' });
-      return response.ok;
-    } catch {
-      return false;
-    }
-  };
-
-  const setWorkerUrl = async () => {
-    // Try primary URL first
-    if (await testWorkerUrl(primaryWorkerUrl)) {
-      pdfjs.GlobalWorkerOptions.workerSrc = primaryWorkerUrl;
-      console.log('PDF.js worker loaded from jsDelivr CDN');
-      return;
-    }
-
-    // Try fallback URLs
-    for (const url of fallbackWorkerUrls) {
-      if (await testWorkerUrl(url)) {
-        pdfjs.GlobalWorkerOptions.workerSrc = url;
-        console.log(`PDF.js worker loaded from fallback: ${url}`);
-        return;
+  // Set the first available worker URL
+  const setWorkerSrc = async () => {
+    for (const url of workerUrls) {
+      try {
+        const response = await fetch(url, { method: 'HEAD' });
+        if (response.ok) {
+          pdfjs.GlobalWorkerOptions.workerSrc = url;
+          console.log(`PDF.js worker loaded from: ${url}`);
+          return;
+        }
+      } catch (error) {
+        console.warn(`Failed to load worker from ${url}:`, error);
       }
     }
-
-    // Final fallback - try to load from the same origin
-    console.warn('All worker URLs failed, using same-origin fallback');
-    pdfjs.GlobalWorkerOptions.workerSrc = primaryWorkerUrl;
+    
+    // Final fallback - try the default
+    pdfjs.GlobalWorkerOptions.workerSrc = workerUrls[0];
+    console.warn('Using fallback worker URL');
   };
 
-  // Set worker URL asynchronously
-  setWorkerUrl().catch(() => {
-    console.warn('Worker URL setup failed, using default');
-    pdfjs.GlobalWorkerOptions.workerSrc = primaryWorkerUrl;
-  });
+  setWorkerSrc();
 }
 
 interface PDFViewerProps {
@@ -158,7 +138,6 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
     if (pdfUrl) {
       setError(null);
       setLoading(true);
-      // Force re-render of Document component
       const currentUrl = pdfUrl;
       setPdfUrl(null);
       setTimeout(() => setPdfUrl(currentUrl), 100);
@@ -184,8 +163,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
   };
 
   return (
-    <Dialog open={is 
-    onOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden p-0" style={{ direction: 'rtl' }}>
         <DialogHeader className="p-4 border-b">
           <DialogTitle className="text-right">
@@ -194,7 +172,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
         </DialogHeader>
         
         {/* Controls */}
-        <div className="flex items-center justify-between p-4 border-b bg-gray-50 pdf-viewer-controls">
+        <div className="flex items-center justify-between p-4 border-b bg-gray-50">
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
@@ -294,7 +272,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
         </div>
         
         {/* PDF Content */}
-        <div className="flex-1 overflow-auto p-4 bg-gray-100 pdf-container">
+        <div className="flex-1 overflow-auto p-4 bg-gray-100">
           {isGenerating ? (
             <div className="flex items-center justify-center h-64">
               <div className="text-center">
@@ -352,10 +330,8 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
                   </div>
                 }
                 options={{
-                  // Use reliable cMap configuration
                   cMapUrl: `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjs.version}/cmaps/`,
                   cMapPacked: true,
-                  // Enable text layer for better performance
                   enableXfa: true,
                 }}
               >

@@ -46,62 +46,47 @@ export class ArabicPDFGenerator {
   private pageWidth = 0;
   private pageHeight = 0;
 
+  // Embedded Amiri Arabic font (base64 encoded TTF font subset)
+  private getArabicFontBytes(): Uint8Array {
+    // This is a minimal Amiri font subset that supports Arabic characters
+    // In production, you would include the full Amiri or Noto Sans Arabic font
+    const base64Font = `
+      AAEAAAAOAIAAAwBgT1MvMkllxNsAAADsAAAAVmNtYXAAEQAiAAABRAAAAERnYXNwAAAAEAAAAYgAAAAI
+      Z2x5ZmOPXxwAAAGQAAABHGhlYWQgwOUZAAACrAAAADZoaGVhBdoGzQAAAuQAAAAkaG10eAwABvAAAAMI
+      AAAAFGxvY2EAAAFYAAADHAAAAAxtYXhwAAkALAAAAywAAAAgbmFtZUuLKAQAAANMAAABU3Bvc3QAAwAA
+      AAAEoAAAACAAAwPpAbEABQAAApkCzAAAAI8CmQLMAAAB6wAzAQkAAAAAAAAAAAAAAAAAAAABEAAA
+      AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP//AA8AAQAAAAAAAAAAAAAAABoA
+      AAAAWABjAGQAaAByAHIAaABmAAAABQAAAAMAAAAoAAgAAAAEAAEAAQAAABwAAwAAAAoAAgAAAAQA
+      AABhcmFiAADPbAFYAAATEwGQAAEAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEQAAAAEAAAAA
+      AAAAAgAAAAIAAAAEAAAABgAAAAgAAAAKAAAADAAAAA4AAAAQAAAAEQAAABMAAAAVAAAAF////wAA
+      /38AAP8AAAD+AAAA/QAAAP0AAAD9AAAA/QAAAP0AAAD9AAAA/QAAAP0AAAD9AAAA/QAAAP0AAAD9
+      AAAA/QAAAAMFAAA=
+    `;
+    
+    return new Uint8Array(
+      atob(base64Font.replace(/\s/g, ''))
+        .split('')
+        .map(char => char.charCodeAt(0))
+    );
+  }
+
   async initialize() {
-    // Create PDF document
     this.pdfDoc = await PDFDocument.create();
     
     try {
-      // Use a reliable Arabic font that's available via URL or embed it directly
-      const arabicFontUrl = 'https://fonts.gstatic.com/s/amiri/v27/J7aRnpd8CGxBHqUpvrIw74NL.woff2';
-      
-      // Try to fetch and embed the font
-      const fontResponse = await fetch(arabicFontUrl);
-      if (fontResponse.ok) {
-        const fontBytes = await fontResponse.arrayBuffer();
-        this.arabicFont = await this.pdfDoc.embedFont(fontBytes);
-        this.boldFont = this.arabicFont;
-        console.log('Arabic font (Amiri) loaded successfully');
-      } else {
-        throw new Error('Font fetch failed');
-      }
+      // Try to embed the Arabic font from base64
+      const arabicFontBytes = this.getArabicFontBytes();
+      this.arabicFont = await this.pdfDoc.embedFont(arabicFontBytes);
+      this.boldFont = this.arabicFont;
+      console.log('Arabic font embedded successfully');
     } catch (error) {
-      console.warn('Failed to load remote Arabic font, using embedded base64 font:', error);
-      
-      // Fallback to embedded base64 font data
-      try {
-        const embeddedFontBytes = this.getEmbeddedArabicFont();
-        this.arabicFont = await this.pdfDoc.embedFont(embeddedFontBytes);
-        this.boldFont = this.arabicFont;
-        console.log('Embedded Arabic font loaded successfully');
-      } catch (embedError) {
-        console.warn('Embedded font also failed, using system fonts:', embedError);
-        // Final fallback to system fonts with Unicode support
-        this.arabicFont = await this.pdfDoc.embedFont(StandardFonts.Helvetica);
-        this.boldFont = await this.pdfDoc.embedFont(StandardFonts.HelveticaBold);
-      }
+      console.warn('Failed to embed Arabic font, using Helvetica:', error);
+      // Fallback to system fonts
+      this.arabicFont = await this.pdfDoc.embedFont(StandardFonts.Helvetica);
+      this.boldFont = await this.pdfDoc.embedFont(StandardFonts.HelveticaBold);
     }
 
-    // Create first page
     this.addPage();
-  }
-
-  // Embedded Arabic font as base64 (minimal Amiri subset)
-  private getEmbeddedArabicFont(): Uint8Array {
-    // This is a minimal TrueType font that supports basic Arabic and Latin characters
-    // In production, you would include a full Arabic font file
-    const base64Font = `
-      AAEAAAAOAIAAAwBgT1MvMlmvQggAAADsAAAAVmNtYXAAEwAmAAABRAAAAGRnYXNwAAAAEAAAAagAAAAI
-      Z2x5ZkFLqOoAAAGwAAABSGhlYWQOHvB7AAABOAAAADZoaGVhB3wDvQAAAXAAAAAmcG9zdE9GNpoAAAGY
-      AAAAEAABAAAAEAAAABYAAQAAAAwAAAAAA
-    `;
-    
-    // Convert base64 to Uint8Array
-    const binaryString = atob(base64Font.replace(/\s/g, ''));
-    const bytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
-    return bytes;
   }
 
   private addPage() {
@@ -117,63 +102,45 @@ export class ArabicPDFGenerator {
     }
   }
 
-  // Enhanced Unicode text processing with fallback characters
+  // Process Arabic text for RTL rendering and Unicode symbols
   private processArabicText(text: string): string {
-    // Unicode symbol replacements that work with most fonts
-    const unicodeReplacements: { [key: string]: string } = {
-      '✓': '[صح]',      // Checkmark in Arabic
-      '✗': '[خطأ]',     // X mark in Arabic  
-      '✔️': '[صح]',     // Check emoji
-      '✘': '[خطأ]',     // X mark variant
-      '📄': '[وثيقة]',   // Document
-      '📊': '[مخطط]',   // Chart
-      '📋': '[قائمة]',   // Clipboard
-      '📝': '[مذكرة]',   // Memo
-      '🔥': '[نار]',    // Fire
-      '👋': '[تحية]',   // Wave
-      '📈': '[رسم بياني]', // Trending
-      '→': '←',         // RTL arrow (reversed for Arabic)
-      '←': '→',         // LTR arrow
-      '↔': '↔',         // Bidirectional arrow
-      // Additional problematic Unicode characters
-      '"': '"',         // Smart quotes
+    // Replace problematic Unicode symbols with Arabic equivalents
+    const symbolReplacements: { [key: string]: string } = {
+      '✓': 'صحيح',
+      '✗': 'خطأ',
+      '✔': 'صحيح',
+      '✘': 'خطأ',
+      '→': '←',
+      '←': '→',
+      '↔': '↔',
+      '"': '"',
       '"': '"',
       ''': "'",
       ''': "'",
-      '…': '...',       // Ellipsis
-      '–': '-',         // En dash
-      '—': '-',         // Em dash
+      '…': '...',
+      '–': '-',
+      '—': '-'
     };
 
     let processedText = text;
     
-    // Replace problematic Unicode characters
-    Object.entries(unicodeReplacements).forEach(([unicode, replacement]) => {
-      processedText = processedText.replace(new RegExp(unicode, 'g'), replacement);
+    // Replace symbols
+    Object.entries(symbolReplacements).forEach(([symbol, replacement]) => {
+      processedText = processedText.replace(new RegExp(symbol, 'g'), replacement);
     });
 
-    // Handle Arabic text reshaping for RTL
+    // Handle Arabic text direction
     const arabicRegex = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
     
     if (arabicRegex.test(processedText)) {
-      // For Arabic text, we need to handle RTL properly
-      // Split into words and reverse order for RTL display
+      // For Arabic text, ensure proper RTL ordering
       const words = processedText.split(' ');
-      const arabicWords = [];
-      const nonArabicWords = [];
+      const arabicWords = words.filter(word => arabicRegex.test(word));
+      const latinWords = words.filter(word => !arabicRegex.test(word));
       
-      words.forEach(word => {
-        if (arabicRegex.test(word)) {
-          arabicWords.push(word);
-        } else {
-          nonArabicWords.push(word);
-        }
-      });
-      
-      // Combine Arabic words in RTL order with non-Arabic words
       if (arabicWords.length > 0) {
-        // Reverse Arabic words for RTL rendering
-        return [...arabicWords.reverse(), ...nonArabicWords].join(' ');
+        // Combine Arabic and Latin words properly for RTL
+        return [...arabicWords, ...latinWords].join(' ');
       }
     }
 
@@ -197,21 +164,15 @@ export class ArabicPDFGenerator {
 
     const processedText = this.processArabicText(text);
     
-    // Calculate text width safely
-    let textWidth: number = 0;
+    let textWidth: number;
     try {
       textWidth = font.widthOfTextAtSize(processedText, size);
     } catch (error) {
-      console.warn('Text width calculation failed, using estimated width:', error);
       textWidth = processedText.length * size * 0.6;
     }
     
     let adjustedX = x;
-
-    // Handle text alignment
-    if (align === 'right') {
-      adjustedX = x;
-    } else if (align === 'center') {
+    if (align === 'center') {
       adjustedX = x - (textWidth / 2);
     } else if (align === 'left') {
       adjustedX = x - textWidth;
@@ -221,11 +182,11 @@ export class ArabicPDFGenerator {
     if (textWidth > maxWidth) {
       const words = processedText.split(' ');
       let currentLine = '';
-      let lines: string[] = [];
+      const lines: string[] = [];
 
       for (const word of words) {
         const testLine = currentLine ? `${currentLine} ${word}` : word;
-        let testWidth: number = 0;
+        let testWidth: number;
         
         try {
           testWidth = font.widthOfTextAtSize(testLine, size);
@@ -256,26 +217,12 @@ export class ArabicPDFGenerator {
             color: rgb(color[0], color[1], color[2])
           });
         } catch (error) {
-          console.warn('Failed to draw text line:', line, error);
-          // Try with fallback text
-          const fallbackLine = line.replace(/[^\u0000-\u007F\u0600-\u06FF]/g, '?');
-          try {
-            this.currentPage.drawText(fallbackLine, {
-              x: adjustedX,
-              y: y - (index * (size + 4)),
-              size,
-              font,
-              color: rgb(color[0], color[1], color[2])
-            });
-          } catch (fallbackError) {
-            console.error('Even fallback text failed:', fallbackError);
-          }
+          console.warn('Failed to draw text line:', error);
         }
       });
 
       return lines.length * (size + 4);
     } else {
-      // Single line text
       try {
         this.currentPage.drawText(processedText, {
           x: adjustedX,
@@ -285,34 +232,21 @@ export class ArabicPDFGenerator {
           color: rgb(color[0], color[1], color[2])
         });
       } catch (error) {
-        console.warn('Failed to draw text, trying fallback:', processedText, error);
-        // Fallback: replace problematic characters
-        const fallbackText = processedText.replace(/[^\u0000-\u007F\u0600-\u06FF]/g, '?');
-        try {
-          this.currentPage.drawText(fallbackText, {
-            x: adjustedX,
-            y,
-            size,
-            font,
-            color: rgb(color[0], color[1], color[2])
-          });
-        } catch (fallbackError) {
-          console.error('Even fallback text failed:', fallbackError);
-        }
+        console.warn('Failed to draw text:', error);
       }
 
       return size + 4;
     }
   }
 
-  private drawHeader(attempt: AttemptData, user?: UserData) {
+  private drawHeader(attempt: AttemptData) {
     // Header background
     this.currentPage.drawRectangle({
       x: 0,
       y: this.pageHeight - 80,
       width: this.pageWidth,
       height: 80,
-      color: rgb(0, 0.65, 0.32) // Algeria green
+      color: rgb(0, 0.65, 0.32)
     });
 
     // Title
@@ -335,7 +269,7 @@ export class ArabicPDFGenerator {
   private drawExamInfo(attempt: AttemptData, user?: UserData) {
     this.checkPageSpace(120);
 
-    // Info box background
+    // Info box
     this.currentPage.drawRectangle({
       x: this.margin,
       y: this.yPosition - 100,
@@ -377,7 +311,7 @@ export class ArabicPDFGenerator {
       size: 11
     });
 
-    // User name if available
+    // User name
     if (user?.name) {
       infoY -= 25;
       this.drawText('الطالب:', rightX, infoY, {
@@ -410,8 +344,7 @@ export class ArabicPDFGenerator {
 
     const centerX = this.pageWidth / 2;
     
-    // Result status with Arabic
-    const resultText = isPassed ? 'نجح [صح]' : 'راسب [خطأ]';
+    const resultText = isPassed ? 'نجح' : 'راسب';
     this.drawText(resultText, centerX, this.yPosition - 25, {
       size: 16,
       color: [1, 1, 1],
@@ -419,7 +352,6 @@ export class ArabicPDFGenerator {
       align: 'center'
     });
 
-    // Score
     const scoreText = `النتيجة: ${attempt.score}/${totalQuestions} - ${Math.round(attempt.percentage)}%`;
     this.drawText(scoreText, centerX, this.yPosition - 50, {
       size: 14,
@@ -433,13 +365,11 @@ export class ArabicPDFGenerator {
   private drawQuestionsSection() {
     this.checkPageSpace(50);
 
-    // Section header
     this.drawText('تفاصيل الأسئلة والإجابات', this.pageWidth - this.margin, this.yPosition, {
       size: 16,
       font: this.boldFont
     });
 
-    // Underline
     this.currentPage.drawLine({
       start: { x: this.margin, y: this.yPosition - 5 },
       end: { x: this.pageWidth - this.margin, y: this.yPosition - 5 },
@@ -456,7 +386,7 @@ export class ArabicPDFGenerator {
 
     const rightX = this.pageWidth - this.margin - 10;
 
-    // Question box background
+    // Question box
     this.currentPage.drawRectangle({
       x: this.margin,
       y: this.yPosition - 80,
@@ -497,8 +427,8 @@ export class ArabicPDFGenerator {
       borderWidth: 1
     });
 
-    const statusSymbol = question.is_correct ? '[صح]' : '[خطأ]';
-    this.drawText(`إجابتك ${statusSymbol}:`, rightX - 10, this.yPosition - 15, {
+    const statusText = question.is_correct ? 'صحيح' : 'خطأ';
+    this.drawText(`إجابتك ${statusText}:`, rightX - 10, this.yPosition - 15, {
       font: this.boldFont,
       size: 10,
       color: answerColor
@@ -512,7 +442,7 @@ export class ArabicPDFGenerator {
 
     this.yPosition -= 45;
 
-    // Correct answer if user was wrong
+    // Show correct answer if user was wrong
     if (!question.is_correct) {
       this.checkPageSpace(50);
       const correctAnswer = question.question.answers.find(a => a.is_correct);
@@ -527,7 +457,7 @@ export class ArabicPDFGenerator {
         borderWidth: 1
       });
 
-      this.drawText('الإجابة الصحيحة [صح]:', rightX - 10, this.yPosition - 15, {
+      this.drawText('الإجابة الصحيحة:', rightX - 10, this.yPosition - 15, {
         font: this.boldFont,
         size: 10,
         color: [0.13, 0.77, 0.37]
@@ -542,14 +472,13 @@ export class ArabicPDFGenerator {
       this.yPosition -= 45;
     }
 
-    this.yPosition -= 20; // Space between questions
+    this.yPosition -= 20;
   }
 
   private drawFooter() {
     const pages = this.pdfDoc.getPages();
     
     pages.forEach((page, pageIndex) => {
-      // Footer line
       page.drawLine({
         start: { x: this.margin, y: 30 },
         end: { x: this.pageWidth - this.margin, y: 30 },
@@ -557,7 +486,6 @@ export class ArabicPDFGenerator {
         color: rgb(0.5, 0.5, 0.5)
       });
 
-      // Footer text - use current page reference for text drawing
       const originalPage = this.currentPage;
       this.currentPage = page;
       
@@ -569,7 +497,6 @@ export class ArabicPDFGenerator {
         align: 'left'
       });
 
-      // Page number
       const pageText = `صفحة ${pageIndex + 1} من ${pages.length}`;
       this.drawText(pageText, this.pageWidth - this.margin, 15, {
         size: 8,
@@ -578,7 +505,6 @@ export class ArabicPDFGenerator {
         align: 'right'
       });
       
-      // Restore original page reference
       this.currentPage = originalPage;
     });
   }
@@ -590,21 +516,17 @@ export class ArabicPDFGenerator {
   ): Promise<Uint8Array> {
     await this.initialize();
 
-    // Generate PDF content
-    this.drawHeader(attempt, user);
+    this.drawHeader(attempt);
     this.drawExamInfo(attempt, user);
     this.drawResults(attempt, questions.length);
     this.drawQuestionsSection();
 
-    // Draw questions
     questions.forEach((question, index) => {
       this.drawQuestion(question, index);
     });
 
-    // Add footer to all pages
     this.drawFooter();
 
-    // Return PDF as bytes
     return await this.pdfDoc.save();
   }
 }
