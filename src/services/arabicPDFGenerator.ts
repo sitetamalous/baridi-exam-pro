@@ -1,5 +1,4 @@
 import { PDFDocument, rgb, StandardFonts, PDFFont, PDFPage } from 'pdf-lib';
-// We are removing the static fontkit import here.
 
 interface ExamData {
   id: string;
@@ -48,20 +47,21 @@ export class ArabicPDFGenerator {
   private hasArabicFont = false;
 
   async initialize() {
-    // Register fontkit for font embedding
+    // Create PDF document
     this.pdfDoc = await PDFDocument.create();
     
-    // Dynamically import fontkit to handle CJS/ESM interop issues
-    const fontkitModule = await import('fontkit');
-    const fontkit = (fontkitModule as any).default || fontkitModule;
-    this.pdfDoc.registerFontkit(fontkit);
-
-    // Try to load Arabic font, fallback to Helvetica if not available
     try {
-      // Use a more reliable Arabic font source
+      // Dynamically import fontkit and handle CommonJS/ESM interop
+      const fontkitModule = await import('fontkit');
+      // Handle both CommonJS and ESM exports
+      const fontkit = fontkitModule.default || fontkitModule;
+      this.pdfDoc.registerFontkit(fontkit);
+
+      console.log('Fontkit loaded successfully, attempting to load Arabic font...');
+      
+      // Try to load Arabic font
       const arabicFontUrl = 'https://fonts.gstatic.com/s/amiri/v27/J7aRnpd8CGxBHqUpvrIw74NL.woff2';
       
-      console.log('Attempting to load Arabic font...');
       const arabicFontBytes = await fetch(arabicFontUrl).then(res => {
         if (!res.ok) {
           throw new Error(`Font fetch failed: ${res.status}`);
@@ -70,11 +70,11 @@ export class ArabicPDFGenerator {
       });
       
       this.arabicFont = await this.pdfDoc.embedFont(arabicFontBytes);
-      this.boldFont = this.arabicFont; // Use same font for bold (we'll simulate with larger size)
+      this.boldFont = this.arabicFont;
       this.hasArabicFont = true;
       console.log('Arabic font loaded successfully');
     } catch (error) {
-      console.warn('Failed to load Arabic font, using Latin text only:', error);
+      console.warn('Failed to load Arabic font or fontkit, using standard fonts:', error);
       this.arabicFont = await this.pdfDoc.embedFont(StandardFonts.Helvetica);
       this.boldFont = await this.pdfDoc.embedFont(StandardFonts.HelveticaBold);
       this.hasArabicFont = false;
