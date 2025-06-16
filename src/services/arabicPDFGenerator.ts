@@ -50,9 +50,8 @@ export class ArabicPDFGenerator {
     this.pdfDoc = await PDFDocument.create();
     
     try {
-      // Dynamically import fontkit
-      const fontkitModule = await import('fontkit');
-      const fontkit = fontkitModule.default || fontkitModule;
+      // Import fontkit with proper ES module syntax
+      const fontkit = await import('fontkit');
       this.pdfDoc.registerFontkit(fontkit);
 
       // Use base64 embedded Arabic font (Amiri Regular - open source Arabic font)

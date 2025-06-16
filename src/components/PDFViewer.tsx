@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
@@ -300,8 +299,6 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
                   </div>
                 }
                 options={{
-                  // Disable worker for more reliable loading
-                  disableWorker: false,
                   // Use more reliable cMap URL
                   cMapUrl: 'https://unpkg.com/pdfjs-dist@3.11.174/cmaps/',
                   cMapPacked: true
