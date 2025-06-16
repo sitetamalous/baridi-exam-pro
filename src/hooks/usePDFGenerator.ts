@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { ArabicPDFGenerator } from '@/services/arabicPDFGenerator';
+import { PDFGenerator } from '@/services/pdfGenerator';
 
 interface ExamAttempt {
   id: string;
@@ -93,11 +93,8 @@ export const usePDFGenerator = () => {
     try {
       const { attempt, answers, userProfile } = await fetchAttemptDetails(attemptId);
       
-      // Initialize the Arabic PDF generator
-      const generator = new ArabicPDFGenerator();
-      
       // Generate PDF with proper Arabic support
-      const pdfBytes = await generator.generatePDF(
+      const pdfBlob = await PDFGenerator.generateExamReport(
         attempt as ExamAttempt,
         answers as UserAnswer[],
         userProfile
@@ -105,19 +102,11 @@ export const usePDFGenerator = () => {
 
       if (action === 'view') {
         // Return blob for in-app viewing
-        const pdfBlob = new Blob([pdfBytes], { type: 'application/pdf' });
         return pdfBlob;
       } else {
         // Download
-        const pdfBlob = new Blob([pdfBytes], { type: 'application/pdf' });
-        const url = URL.createObjectURL(pdfBlob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `تقرير-امتحان-${new Date().toISOString().split('T')[0]}.pdf`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+        const filename = `تقرير-امتحان-${attempt.exam?.title || 'امتحان'}-${new Date().toISOString().split('T')[0]}.pdf`;
+        await PDFGenerator.downloadPDF(pdfBlob, filename);
         return null;
       }
     } catch (error) {

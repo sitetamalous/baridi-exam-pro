@@ -19,4 +19,17 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  optimizeDeps: {
+    include: ['pdfmake/build/pdfmake', 'pdfmake/build/vfs_fonts']
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'pdf-worker': ['react-pdf'],
+          'pdfmake': ['pdfmake/build/pdfmake', 'pdfmake/build/vfs_fonts']
+        }
+      }
+    }
+  }
 }));

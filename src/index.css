@@ -1,4 +1,3 @@
-
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@300;400;500;600;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap');
 @tailwind base;
@@ -257,6 +256,22 @@
     .react-pdf__Page {
       margin-bottom: 8px;
     }
+  }
+
+  /* PDF.js specific styles */
+  .react-pdf__Document {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .react-pdf__Page__textContent {
+    direction: rtl;
+    text-align: right;
+  }
+
+  .react-pdf__Page__annotations {
+    direction: rtl;
   }
 }
 
