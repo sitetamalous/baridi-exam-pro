@@ -1,4 +1,3 @@
-
 import { PDFDocument, rgb, StandardFonts, PDFFont, PDFPage } from 'pdf-lib';
 
 interface ExamData {
@@ -59,8 +58,8 @@ export class ArabicPDFGenerator {
 
       console.log('Fontkit loaded successfully, attempting to load Arabic font...');
       
-      // Try to load Arabic font
-      const arabicFontUrl = 'https://fonts.gstatic.com/s/amiri/v27/J7aRnpd8CGxBHqUpvrIw74NL.woff2';
+      // Try to load Arabic font - using a more reliable URL
+      const arabicFontUrl = 'https://fonts.gstatic.com/s/nototc/v28/NotoSansTC-Regular.ttf';
       
       const arabicFontBytes = await fetch(arabicFontUrl).then(res => {
         if (!res.ok) {
@@ -103,7 +102,7 @@ export class ArabicPDFGenerator {
       return text; // Return original text if we have Arabic font
     }
     
-    // If no Arabic font, convert to Latin equivalent
+    // If no Arabic font, convert to Latin equivalent and replace Unicode symbols
     const arabicToLatin: { [key: string]: string } = {
       'منصة امتحانات بريد الجزائر': 'Algeria Post Exam Platform',
       'تقرير نتائج الامتحان': 'Exam Results Report',
@@ -129,8 +128,24 @@ export class ArabicPDFGenerator {
       return arabicToLatin[text];
     }
     
+    // Replace Unicode symbols with WinAnsi-compatible alternatives
+    let processedText = text
+      .replace(/✓/g, '[PASS]')  // Replace checkmark
+      .replace(/✗/g, '[FAIL]')  // Replace X mark
+      .replace(/✔️/g, '[CORRECT]')  // Replace check emoji
+      .replace(/✘/g, '[WRONG]')   // Replace X mark
+      .replace(/📄/g, '')         // Remove document emoji
+      .replace(/📊/g, '')         // Remove chart emoji
+      .replace(/📋/g, '')         // Remove clipboard emoji
+      .replace(/📝/g, '')         // Remove memo emoji
+      .replace(/🔥/g, '')         // Remove fire emoji
+      .replace(/👋/g, '')         // Remove wave emoji
+      .replace(/📈/g, '');        // Remove trending emoji
+    
     // For other text, remove Arabic characters and keep Latin/numbers
-    return text.replace(/[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/g, '?');
+    processedText = processedText.replace(/[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/g, '?');
+    
+    return processedText;
   }
 
   // Proper Arabic text handling with RTL support (only when Arabic font is available)
@@ -351,8 +366,8 @@ export class ArabicPDFGenerator {
 
     const centerX = this.pageWidth / 2;
     
-    // Result status
-    const resultText = isPassed ? 'Passed ✓' : 'Failed ✗';
+    // Result status - Use WinAnsi-compatible text
+    const resultText = isPassed ? 'Passed [PASS]' : 'Failed [FAIL]';
     this.drawText(resultText, centerX, this.yPosition - 25, {
       size: 16,
       color: [1, 1, 1],
