@@ -3,7 +3,6 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import BottomNav from "@/components/BottomNav";
 
 const Home: React.FC = () => {
   const { user } = useAuth();
@@ -41,7 +40,6 @@ const Home: React.FC = () => {
           </Button>
         )}
       </div>
-      <BottomNav />
     </div>
   );
 };

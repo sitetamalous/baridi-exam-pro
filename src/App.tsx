@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
@@ -33,6 +33,22 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+// Component to conditionally show BottomNav
+const ConditionalBottomNav = () => {
+  const location = useLocation();
+  
+  // Don't show BottomNav on exam pages or auth pages
+  const hideBottomNav = ['/auth', '/login', '/register'].some(path => 
+    location.pathname.startsWith(path)
+  ) || location.pathname.includes('/exam/');
+  
+  if (hideBottomNav) {
+    return null;
+  }
+  
+  return <BottomNav />;
+};
 
 const App = () => {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -120,8 +136,8 @@ const App = () => {
                 <Route path="*" element={<NotFound />} />
               </Routes>
 
-              {/* Show BottomNav bar except on some pages */}
-              <BottomNav />
+              {/* Show BottomNav conditionally */}
+              <ConditionalBottomNav />
               <PWAInstallBanner />
             </div>
             

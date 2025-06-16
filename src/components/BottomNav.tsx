@@ -27,7 +27,6 @@ const BottomNav: React.FC<BottomNavProps> = ({ className }) => {
     >
       {navLinks.map((link) => {
         const Icon = link.icon;
-        // تعتبر /dashboard و /dashboard* نشطة
         const isActive = pathname === link.to || pathname.startsWith(link.to + "/");
         return (
           <button
