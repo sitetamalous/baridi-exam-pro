@@ -1,6 +1,5 @@
 
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
-import fontkit from '@pdf-lib/fontkit';
 
 interface ExamAttempt {
   id: string;
@@ -35,8 +34,63 @@ interface UserProfile {
   email?: string;
 }
 
-// Fallback Arabic font data (minimal subset)
-const ARABIC_FONT_BASE64 = 'data:font/truetype;base64,AAEAAAAKAIAAAwAgT1MvMi+mT78AAAEoAAAAYGNtYXAAFgCPAAABiAAAAFRnYXNwAAAAEAAAAdwAAAAIZ2x5ZgALAAAAAAHkAAAAYGhlYWQfph19AAAAvAAAADZoaGVhBzgEJAAAAPQAAAAkaG10eAcAAAAAAAFEAAAADGxvY2EACQAJAAABUAAAAAhtYXhwAAoAPwAAAVgAAAAgbmFtZYkK/CIAAAJEAAAAe3Bvc3QAAwAAAAADAQAAACAAAQAAAAEAAKGJVFVfDzz1AAsD6AAAAADcJhgGAAAAANwmGAYAAP/sA+gDEgAAAAgAAgAAAAAAAAABAAADEP/sAAAD6AAAAAAD6AABAAAAAAAAAAAAAAAAAAAAAgABAAAAAgAvAAIAAAAAAAIAAAABAAEAAABAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAA=';
+// Helper function to transliterate Arabic to Latin for PDF compatibility
+const transliterateArabic = (text: string): string => {
+  const arabicToLatin: { [key: string]: string } = {
+    'ا': 'a', 'ب': 'b', 'ت': 't', 'ث': 'th', 'ج': 'j', 'ح': 'h',
+    'خ': 'kh', 'د': 'd', 'ذ': 'dh', 'ر': 'r', 'ز': 'z', 'س': 's',
+    'ش': 'sh', 'ص': 's', 'ض': 'd', 'ط': 't', 'ظ': 'z', 'ع': 'a',
+    'غ': 'gh', 'ف': 'f', 'ق': 'q', 'ك': 'k', 'ل': 'l', 'م': 'm',
+    'ن': 'n', 'ه': 'h', 'و': 'w', 'ي': 'y', 'ة': 'h', 'ى': 'a',
+    'ء': 'a', 'آ': 'aa', 'أ': 'a', 'إ': 'i', 'ؤ': 'u', 'ئ': 'i',
+    'َ': '', 'ُ': '', 'ِ': '', 'ً': '', 'ٌ': '', 'ٍ': '', 'ْ': ''
+  };
+
+  return text.replace(/[\u0600-\u06FF]/g, (char) => arabicToLatin[char] || '?');
+};
+
+// Safe text drawing function
+const drawTextSafe = (
+  page: any,
+  text: string,
+  x: number,
+  y: number,
+  options: any = {}
+) => {
+  try {
+    // First try with original text
+    page.drawText(text, {
+      x,
+      y,
+      font: options.font || StandardFonts.Helvetica,
+      size: options.size || 12,
+      color: options.color || rgb(0, 0, 0),
+    });
+  } catch (error) {
+    console.log('فشل في كتابة النص العربي، جاري التحويل:', text);
+    // If Arabic text fails, transliterate it
+    const transliteratedText = transliterateArabic(text);
+    try {
+      page.drawText(transliteratedText, {
+        x,
+        y,
+        font: options.font || StandardFonts.Helvetica,
+        size: options.size || 12,
+        color: options.color || rgb(0, 0, 0),
+      });
+    } catch (fallbackError) {
+      // Ultimate fallback - remove special characters
+      const safeText = text.replace(/[^\x00-\x7F]/g, '?');
+      page.drawText(safeText, {
+        x,
+        y,
+        font: options.font || StandardFonts.Helvetica,
+        size: options.size || 12,
+        color: options.color || rgb(0, 0, 0),
+      });
+    }
+  }
+};
 
 export class PDFGenerator {
   static async generateExamReport(
@@ -49,27 +103,8 @@ export class PDFGenerator {
       
       // إنشاء مستند PDF جديد
       const pdfDoc = await PDFDocument.create();
-      pdfDoc.registerFontkit(fontkit);
       
-      // تحميل خط يدعم Unicode
-      let arabicFont;
-      try {
-        // محاولة تحميل خط من Google Fonts
-        const fontResponse = await fetch('https://fonts.gstatic.com/s/notoserif/v21/ga6iaw1J5X9T9RW6j9bNfFImZq4IPVs.woff2');
-        if (fontResponse.ok) {
-          const fontBytes = await fontResponse.arrayBuffer();
-          arabicFont = await pdfDoc.embedFont(fontBytes);
-          console.log('تم تحميل خط عربي من Google Fonts');
-        } else {
-          throw new Error('Failed to load Google Font');
-        }
-      } catch (error) {
-        console.log('فشل تحميل الخط من Google Fonts، سيتم استخدام خط احتياطي');
-        // استخدام خط احتياطي بسيط
-        arabicFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
-      }
-
-      // الخط الافتراضي للنص الإنجليزي
+      // استخدام الخطوط المعيارية فقط لتجنب مشاكل fontkit
       const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
       const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
       
@@ -81,36 +116,8 @@ export class PDFGenerator {
       const margin = 50;
       const lineHeight = 20;
       
-      // دالة مساعدة لكتابة النص مع دعم العربية
-      const drawTextSafe = (text: string, x: number, y: number, options: any = {}) => {
-        try {
-          // فحص إذا كان النص يحتوي على أحرف عربية
-          const hasArabic = /[\u0600-\u06FF]/.test(text);
-          const selectedFont = hasArabic ? arabicFont : (options.font || font);
-          
-          page.drawText(text, {
-            x,
-            y,
-            font: selectedFont,
-            size: options.size || 12,
-            color: options.color || rgb(0, 0, 0),
-          });
-        } catch (error) {
-          console.log('خطأ في كتابة النص:', text, error);
-          // محاولة كتابة النص بالخط الافتراضي
-          const safeText = text.replace(/[^\x00-\x7F]/g, '?'); // استبدال الأحرف غير ASCII
-          page.drawText(safeText, {
-            x,
-            y,
-            font: font,
-            size: options.size || 12,
-            color: options.color || rgb(0, 0, 0),
-          });
-        }
-      };
-      
       // العنوان الرئيسي
-      drawTextSafe('Algeria Post Exam Report', margin, yPosition, {
+      drawTextSafe(page, 'Algeria Post Exam Report', margin, yPosition, {
         size: 20,
         font: boldFont,
         color: rgb(0, 0.65, 0.32),
@@ -118,22 +125,24 @@ export class PDFGenerator {
       yPosition -= lineHeight * 2;
       
       // معلومات الامتحان
-      const examTitle = attempt.exam?.title || 'امتحان';
-      drawTextSafe(`Exam: ${examTitle}`, margin, yPosition, {
+      const examTitle = attempt.exam?.title || 'Exam';
+      drawTextSafe(page, `Exam: ${examTitle}`, margin, yPosition, {
         size: 14,
         font: boldFont,
       });
       yPosition -= lineHeight;
       
       const studentName = userProfile?.name || userProfile?.email || 'Unknown';
-      drawTextSafe(`Student: ${studentName}`, margin, yPosition, {
+      drawTextSafe(page, `Student: ${studentName}`, margin, yPosition, {
         size: 12,
+        font: font,
       });
       yPosition -= lineHeight;
       
       const examDate = new Date(attempt.completed_at).toLocaleDateString('en-US');
-      drawTextSafe(`Date: ${examDate}`, margin, yPosition, {
+      drawTextSafe(page, `Date: ${examDate}`, margin, yPosition, {
         size: 12,
+        font: font,
       });
       yPosition -= lineHeight * 2;
       
@@ -142,27 +151,32 @@ export class PDFGenerator {
       const totalQuestions = answers.length;
       const percentage = totalQuestions > 0 ? (correctAnswers / totalQuestions) * 100 : 0;
       
-      drawTextSafe('Results Summary:', margin, yPosition, {
+      drawTextSafe(page, 'Results Summary:', margin, yPosition, {
         size: 16,
         font: boldFont,
       });
       yPosition -= lineHeight;
       
-      drawTextSafe(`Total Questions: ${totalQuestions}`, margin, yPosition);
+      drawTextSafe(page, `Total Questions: ${totalQuestions}`, margin, yPosition, {
+        font: font,
+      });
       yPosition -= lineHeight;
       
-      drawTextSafe(`Correct Answers: ${correctAnswers}`, margin, yPosition);
+      drawTextSafe(page, `Correct Answers: ${correctAnswers}`, margin, yPosition, {
+        font: font,
+      });
       yPosition -= lineHeight;
       
       const scoreColor = percentage >= 70 ? rgb(0, 0.8, 0) : percentage >= 50 ? rgb(1, 0.6, 0) : rgb(1, 0, 0);
-      drawTextSafe(`Score: ${percentage.toFixed(1)}%`, margin, yPosition, {
+      drawTextSafe(page, `Score: ${percentage.toFixed(1)}%`, margin, yPosition, {
         color: scoreColor,
+        font: boldFont,
       });
       yPosition -= lineHeight * 2;
       
       // تقييم الأداء
       const performance = percentage >= 70 ? 'Excellent' : percentage >= 50 ? 'Good' : 'Needs Improvement';
-      drawTextSafe(`Performance: ${performance}`, margin, yPosition, {
+      drawTextSafe(page, `Performance: ${performance}`, margin, yPosition, {
         size: 14,
         font: boldFont,
         color: scoreColor,
@@ -170,7 +184,7 @@ export class PDFGenerator {
       yPosition -= lineHeight * 2;
       
       // معلومات الأسئلة
-      drawTextSafe('Questions Review:', margin, yPosition, {
+      drawTextSafe(page, 'Questions Review:', margin, yPosition, {
         size: 14,
         font: boldFont,
       });
@@ -183,18 +197,20 @@ export class PDFGenerator {
         const statusText = answer.is_correct ? 'Correct' : 'Incorrect';
         const statusColor = answer.is_correct ? rgb(0, 0.8, 0) : rgb(1, 0, 0);
         
-        drawTextSafe(`Q${index + 1}: ${statusText}`, margin, yPosition, {
+        drawTextSafe(page, `Q${index + 1}: ${statusText}`, margin, yPosition, {
           size: 10,
           color: statusColor,
+          font: font,
         });
         yPosition -= lineHeight * 0.8;
       });
       
       // معلومات التذييل
       const footerText = `Generated on: ${new Date().toLocaleString('en-US')}`;
-      drawTextSafe(footerText, margin, 50, {
+      drawTextSafe(page, footerText, margin, 50, {
         size: 8,
         color: rgb(0.5, 0.5, 0.5),
+        font: font,
       });
       
       // تحويل PDF إلى Blob
