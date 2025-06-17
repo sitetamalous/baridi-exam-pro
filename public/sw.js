@@ -1,12 +1,10 @@
+
 const CACHE_NAME = 'algeria-post-exam-v1.2.0';
 const urlsToCache = [
   '/',
-  '/static/js/bundle.js',
-  '/static/css/main.css',
   '/manifest.json',
   '/icon-192x192.png',
-  '/icon-512x512.png',
-  'https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@300;400;500;600;700&display=swap'
+  '/icon-512x512.png'
 ];
 
 // Install event
@@ -16,6 +14,9 @@ self.addEventListener('install', (event) => {
       .then((cache) => {
         console.log('Opened cache');
         return cache.addAll(urlsToCache);
+      })
+      .catch((error) => {
+        console.error('Cache addAll failed:', error);
       })
   );
 });
@@ -96,93 +97,6 @@ self.addEventListener('activate', (event) => {
     })
   );
 });
-
-// Background sync for offline exam submissions and PDF generation
-self.addEventListener('sync', (event) => {
-  if (event.tag === 'submit-exam') {
-    event.waitUntil(handleOfflineExamSubmission());
-  }
-  
-  if (event.tag === 'generate-pdf') {
-    event.waitUntil(handleOfflinePDFGeneration());
-  }
-});
-
-async function handleOfflineExamSubmission() {
-  try {
-    const examData = await getStoredExamData();
-    if (examData) {
-      const response = await fetch('/api/submit-exam', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(examData)
-      });
-      
-      if (response.ok) {
-        await clearStoredExamData();
-      }
-    }
-  } catch (error) {
-    console.error('Failed to submit offline exam:', error);
-  }
-}
-
-async function handleOfflinePDFGeneration() {
-  try {
-    const pendingPDFs = await getStoredPDFRequests();
-    for (const pdfRequest of pendingPDFs) {
-      // Generate PDF when back online
-      await generateOfflinePDF(pdfRequest);
-    }
-    await clearStoredPDFRequests();
-  } catch (error) {
-    console.error('Failed to generate offline PDFs:', error);
-  }
-}
-
-async function getStoredExamData() {
-  const cache = await caches.open('exam-submissions');
-  const requests = await cache.keys();
-  if (requests.length > 0) {
-    const response = await cache.match(requests[0]);
-    return response ? await response.json() : null;
-  }
-  return null;
-}
-
-async function getStoredPDFRequests() {
-  const cache = await caches.open('pdf-requests');
-  const requests = await cache.keys();
-  const pdfRequests = [];
-  
-  for (const request of requests) {
-    const response = await cache.match(request);
-    if (response) {
-      pdfRequests.push(await response.json());
-    }
-  }
-  
-  return pdfRequests;
-}
-
-async function clearStoredExamData() {
-  const cache = await caches.open('exam-submissions');
-  const requests = await cache.keys();
-  await Promise.all(requests.map(request => cache.delete(request)));
-}
-
-async function clearStoredPDFRequests() {
-  const cache = await caches.open('pdf-requests');
-  const requests = await cache.keys();
-  await Promise.all(requests.map(request => cache.delete(request)));
-}
-
-async function generateOfflinePDF(pdfRequest) {
-  // This would handle offline PDF generation logic
-  console.log('Generating offline PDF for:', pdfRequest);
-}
 
 // Push notification handler with Arabic support
 self.addEventListener('push', (event) => {

@@ -5,8 +5,26 @@ import { Button } from '@/components/ui/button';
 import { Download, ZoomIn, ZoomOut, RotateCw, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
-// Configure PDF.js worker with local bundle
-pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
+// Set up PDF.js worker - using a more reliable approach
+if (typeof window !== 'undefined') {
+  // Try to use local worker first, then fallback to CDN
+  const workerUrl = '/pdf.worker.min.js';
+  
+  // Test if local worker exists
+  fetch(workerUrl)
+    .then(response => {
+      if (response.ok) {
+        pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
+      } else {
+        // Fallback to CDN
+        pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
+      }
+    })
+    .catch(() => {
+      // If fetch fails, use CDN
+      pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
+    });
+}
 
 interface PDFViewerProps {
   isOpen: boolean;
@@ -30,22 +48,26 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
   const [scale, setScale] = useState<number>(1.0);
   const [rotation, setRotation] = useState<number>(0);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
-  const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
     if (pdfBlob && isOpen) {
-      const url = URL.createObjectURL(pdfBlob);
-      setPdfUrl(url);
-      setPageNumber(1);
-      setScale(1.0);
-      setRotation(0);
-      setError(null);
+      try {
+        const url = URL.createObjectURL(pdfBlob);
+        setPdfUrl(url);
+        setPageNumber(1);
+        setScale(1.0);
+        setRotation(0);
+        setError(null);
 
-      return () => {
-        URL.revokeObjectURL(url);
-      };
+        return () => {
+          URL.revokeObjectURL(url);
+        };
+      } catch (err) {
+        console.error('Error creating PDF URL:', err);
+        setError('فشل في إنشاء رابط PDF');
+      }
     } else {
       setPdfUrl(null);
     }
@@ -53,14 +75,12 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
 
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
     setNumPages(numPages);
-    setLoading(false);
     setError(null);
   };
 
   const onDocumentLoadError = (error: Error) => {
     console.error('PDF loading error:', error);
     setError('فشل في تحميل ملف PDF');
-    setLoading(false);
     toast({
       variant: "destructive",
       title: "خطأ في تحميل PDF",
@@ -238,6 +258,11 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
                     <div className="text-red-500">فشل في تحميل PDF</div>
                   </div>
                 }
+                options={{
+                  cMapUrl: `https://unpkg.com/pdfjs-dist@${pdfjs.version}/cmaps/`,
+                  cMapPacked: true,
+                  standardFontDataUrl: `https://unpkg.com/pdfjs-dist@${pdfjs.version}/standard_fonts/`,
+                }}
               >
                 <Page
                   pageNumber={pageNumber}
