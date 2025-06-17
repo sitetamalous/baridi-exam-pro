@@ -100,7 +100,7 @@ export class ArabicPDFGenerator {
     
     // Replace symbols
     Object.entries(symbolReplacements).forEach(([symbol, replacement]) => {
-      processedText = processedText.replace(new RegExp(symbol, 'g'), replacement);
+      processedText = processedText.replace(new RegExp(symbol.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), replacement);
     });
 
     // Handle Arabic text direction
