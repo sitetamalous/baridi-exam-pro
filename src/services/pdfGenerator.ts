@@ -1,8 +1,12 @@
-import * as pdfMake from 'pdfmake/build/pdfmake';
-import * as pdfFonts from 'pdfmake/build/vfs_fonts';
+import * as _pdfMake from 'pdfmake/build/pdfmake';
+import * as _pdfFonts from 'pdfmake/build/vfs_fonts';
+
+// Create mutable local variables from the imports
+const pdfMake = _pdfMake as any;
+const pdfFonts = _pdfFonts as any;
 
 // Initialize pdfMake with built-in fonts
-(pdfMake as any).vfs = pdfFonts.pdfMake.vfs;
+pdfMake.vfs = pdfFonts.pdfMake.vfs;
 
 // Define custom fonts with Arabic support
 const fonts = {
@@ -63,7 +67,7 @@ const initializeFonts = async () => {
     ]);
 
     // Add fonts to VFS
-    Object.assign((pdfMake as any).vfs, {
+    Object.assign(pdfMake.vfs, {
       'amiri-regular.ttf': amiriRegular.split(',')[1],
       'amiri-bold.ttf': amiriBold.split(',')[1],
       'noto-sans-arabic-regular.ttf': notoRegular.split(',')[1],
