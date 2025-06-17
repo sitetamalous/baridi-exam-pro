@@ -1,3 +1,4 @@
+
 import * as _pdfMake from 'pdfmake/build/pdfmake';
 import * as _pdfFonts from 'pdfmake/build/vfs_fonts';
 
@@ -147,7 +148,6 @@ export class PDFGenerator {
     // Unicode symbols that work with Arabic fonts
     const checkMark = '✓';
     const crossMark = '✗';
-    const rightArrow = '←';
 
     const docDefinition: any = {
       pageSize: 'A4',
