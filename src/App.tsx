@@ -5,9 +5,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
-import Index from "./pages/Index";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Exam from "./pages/Exam";
 import Results from "./pages/Results";
@@ -27,8 +24,8 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 3,
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      gcTime: 10 * 60 * 1000, // 10 minutes
+      staleTime: 5 * 60 * 1000,
+      gcTime: 10 * 60 * 1000,
     },
   },
 });
@@ -37,9 +34,9 @@ const queryClient = new QueryClient({
 const ConditionalBottomNav = () => {
   const location = useLocation();
   
-  // Don't show BottomNav on exam pages or auth pages
-  const hideBottomNav = ['/auth', '/login', '/register'].some(path => 
-    location.pathname.startsWith(path)
+  // Don't show BottomNav on certain pages
+  const hideBottomNav = ['/auth', '/login', '/register', '/'].some(path => 
+    location.pathname === path
   ) || location.pathname.includes('/exam/');
   
   if (hideBottomNav) {
@@ -78,31 +75,22 @@ const App = () => {
               )}
 
               <Routes>
+                {/* صفحة البداية */}
                 <Route path="/" element={<Home />} />
+                
+                {/* صفحة المصادقة */}
                 <Route path="/auth" element={<Auth />} />
+                
+                {/* إعادة توجيه الصفحات القديمة */}
                 <Route path="/login" element={<Navigate to="/auth" replace />} />
                 <Route path="/register" element={<Navigate to="/auth" replace />} />
 
-                {/* Protected Routes */}
+                {/* الصفحات المحمية */}
                 <Route path="/dashboard" element={
                   <ProtectedRoute>
                     <Layout>
                       <Dashboard />
                     </Layout>
-                  </ProtectedRoute>
-                } />
-
-                {/* لا يظهر الـ Layout في الامتحان */}
-                <Route path="/exam/:examId" element={
-                  <ProtectedRoute>
-                    <Exam />
-                  </ProtectedRoute>
-                } />
-
-                {/* حل مشكلة 404: صفحة مراجعة الامتحان */}
-                <Route path="/exam/:examId/review" element={
-                  <ProtectedRoute>
-                    <ExamReviewPage />
                   </ProtectedRoute>
                 } />
 
@@ -114,28 +102,43 @@ const App = () => {
                   </ProtectedRoute>
                 } />
 
-                {/* NEW: Exams, Statistics, Profile - bottom nav style */}
+                {/* صفحات بدون Layout (استخدام BottomNav) */}
                 <Route path="/exams" element={
                   <ProtectedRoute>
                     <Exams />
                   </ProtectedRoute>
                 } />
+
                 <Route path="/statistics" element={
                   <ProtectedRoute>
                     <Statistics />
                   </ProtectedRoute>
                 } />
+
                 <Route path="/profile" element={
                   <ProtectedRoute>
                     <Profile />
                   </ProtectedRoute>
                 } />
 
-                {/* Catch-all route */}
+                {/* صفحات الامتحان (بدون أي layout) */}
+                <Route path="/exam/:examId" element={
+                  <ProtectedRoute>
+                    <Exam />
+                  </ProtectedRoute>
+                } />
+
+                <Route path="/exam/:examId/review" element={
+                  <ProtectedRoute>
+                    <ExamReviewPage />
+                  </ProtectedRoute>
+                } />
+
+                {/* صفحة 404 */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
 
-              {/* Show BottomNav conditionally */}
+              {/* إظهار BottomNav حسب الحاجة */}
               <ConditionalBottomNav />
             </div>
             
