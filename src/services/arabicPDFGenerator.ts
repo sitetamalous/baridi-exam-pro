@@ -1,3 +1,4 @@
+
 import { PDFDocument, rgb, StandardFonts, PDFFont, PDFPage } from 'pdf-lib';
 
 interface ExamData {
@@ -86,8 +87,8 @@ export class ArabicPDFGenerator {
       '→': '←',
       '←': '→',
       '↔': '↔',
-      '"': '"',
-      '"': '"',
+      '\u201C': '"', // Left double quotation mark
+      '\u201D': '"', // Right double quotation mark
       '\u2018': "'", // Left single quotation mark
       '\u2019': "'", // Right single quotation mark
       '…': '...',
