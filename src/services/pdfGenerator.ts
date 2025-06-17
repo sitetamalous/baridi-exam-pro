@@ -65,7 +65,6 @@ const drawSafeText = (
     const safeText = arabicToLatin(text);
     const maxWidth = options.maxWidth || 400;
     const fontSize = options.size || 10;
-    const font = options.font || StandardFonts.Helvetica;
     
     // Simple word wrapping
     const words = safeText.split(' ');
@@ -92,7 +91,7 @@ const drawSafeText = (
         x,
         y: currentY,
         size: fontSize,
-        font,
+        font: options.font || StandardFonts.Helvetica,
         color: options.color || rgb(0, 0, 0),
       });
       currentY -= fontSize + 2;
@@ -119,7 +118,7 @@ export class PDFGenerator {
     userProfile?: UserProfile
   ): Promise<Blob> {
     try {
-      console.log('Starting PDF generation with real data...');
+      console.log('Starting PDF generation...');
       
       const pdfDoc = await PDFDocument.create();
       const helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
@@ -323,7 +322,7 @@ export class PDFGenerator {
       });
       
       const pdfBytes = await pdfDoc.save();
-      console.log('PDF generated successfully with real data');
+      console.log('PDF generated successfully');
       
       return new Blob([pdfBytes], { type: 'application/pdf' });
       
