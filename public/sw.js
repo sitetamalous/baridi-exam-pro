@@ -1,5 +1,5 @@
 
-const CACHE_NAME = 'algeria-post-exam-v1.2.0';
+const CACHE_NAME = 'algeria-post-exam-v1.2.1'; // Updated version to force cache clear
 const urlsToCache = [
   '/',
   '/manifest.json',

@@ -28,7 +28,7 @@ export default defineConfig(({ mode }) => ({
       'stream',
       'util'
     ],
-    exclude: ['pdfmake'],
+    exclude: ['pdfmake', 'fontkit'], // Explicitly exclude fontkit to prevent import issues
     esbuildOptions: {
       define: {
         global: 'globalThis',
