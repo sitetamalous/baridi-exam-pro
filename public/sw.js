@@ -1,5 +1,4 @@
-
-const CACHE_NAME = 'algeria-post-exam-v1.2.1'; // Updated version to force cache clear
+const CACHE_NAME = 'algeria-post-exam-v1.2.3'; // Updated version to force cache clear
 const urlsToCache = [
   '/',
   '/manifest.json',
@@ -24,6 +23,14 @@ self.addEventListener('install', (event) => {
 // Enhanced fetch event with PDF worker support
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
+  
+  // Block any fontkit requests completely
+  if (url.pathname.includes('fontkit')) {
+    event.respondWith(
+      new Response('', { status: 404, statusText: 'Not Found' })
+    );
+    return;
+  }
   
   // Handle PDF.js worker requests specially
   if (url.pathname.includes('pdf.worker') || url.pathname.includes('pdfjs-dist')) {

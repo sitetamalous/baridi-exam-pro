@@ -9,6 +9,7 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
+    force: true, // Force dependency re-optimization
   },
   plugins: [
     react(),
@@ -29,6 +30,7 @@ export default defineConfig(({ mode }) => ({
       'util'
     ],
     exclude: ['pdfmake', 'fontkit'], // Explicitly exclude fontkit to prevent import issues
+    force: true, // Force dependency re-optimization
     esbuildOptions: {
       define: {
         global: 'globalThis',
@@ -56,5 +58,7 @@ export default defineConfig(({ mode }) => ({
   define: {
     global: 'globalThis',
     'process.env': {},
-  }
+  },
+  // Clear cache on startup
+  cacheDir: '.vite-new'
 }));
