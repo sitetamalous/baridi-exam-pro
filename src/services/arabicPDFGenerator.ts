@@ -88,8 +88,8 @@ export class ArabicPDFGenerator {
       '↔': '↔',
       '"': '"',
       '"': '"',
-      ''': "'",
-      ''': "'",
+      '\u2018': "'", // Left single quotation mark
+      '\u2019': "'", // Right single quotation mark
       '…': '...',
       '–': '-',
       '—': '-'
