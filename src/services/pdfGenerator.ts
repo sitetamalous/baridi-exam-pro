@@ -3,7 +3,7 @@ import * as _pdfFonts from 'pdfmake/build/vfs_fonts';
 
 // Create mutable local variables from the imports - fix default export access
 const pdfMake = (_pdfMake as any).default;
-const pdfFonts = (_pdfFonts as any).default;
+const pdfFonts = _pdfFonts;
 
 // Initialize pdfMake with built-in fonts
 pdfMake.vfs = pdfFonts.pdfMake.vfs;
