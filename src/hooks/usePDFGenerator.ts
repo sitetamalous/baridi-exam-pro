@@ -40,73 +40,82 @@ export const usePDFGenerator = () => {
   const fetchAttemptDetails = async (attemptId: string) => {
     console.log('Fetching attempt details for:', attemptId);
     
-    // Fetch attempt details with exam info
-    const { data: attempt, error: attemptError } = await supabase
-      .from('user_attempts')
-      .select(`
-        id,
-        score,
-        percentage,
-        completed_at,
-        started_at,
-        exam:exams(id, title, description)
-      `)
-      .eq('id', attemptId)
-      .eq('user_id', user?.id)
-      .single();
+    try {
+      // Fetch attempt details with exam info
+      const { data: attempt, error: attemptError } = await supabase
+        .from('user_attempts')
+        .select(`
+          id,
+          score,
+          percentage,
+          completed_at,
+          started_at,
+          exam:exams(id, title, description)
+        `)
+        .eq('id', attemptId)
+        .eq('user_id', user?.id)
+        .single();
 
-    if (attemptError) {
-      console.error('Error fetching attempt:', attemptError);
-      throw attemptError;
-    }
+      if (attemptError) {
+        console.error('Error fetching attempt:', attemptError);
+        throw new Error('فشل في جلب بيانات الامتحان');
+      }
 
-    console.log('Attempt fetched:', attempt);
+      console.log('Attempt fetched:', attempt);
 
-    // Fetch user answers with questions, all possible answers, and explanations
-    const { data: answers, error: answersError } = await supabase
-      .from('user_answers')
-      .select(`
-        id,
-        question_id,
-        selected_answer_id,
-        is_correct,
-        question:questions(
-          question_text,
-          explanation,
-          answers(
-            id,
-            answer_text,
-            is_correct
+      // Fetch user answers with questions, all possible answers, and explanations
+      const { data: answers, error: answersError } = await supabase
+        .from('user_answers')
+        .select(`
+          id,
+          question_id,
+          selected_answer_id,
+          is_correct,
+          question:questions(
+            question_text,
+            explanation,
+            answers(
+              id,
+              answer_text,
+              is_correct
+            )
           )
-        )
-      `)
-      .eq('attempt_id', attemptId)
-      .order('question_id');
+        `)
+        .eq('attempt_id', attemptId)
+        .order('question_id');
 
-    if (answersError) {
-      console.error('Error fetching answers:', answersError);
-      throw answersError;
+      if (answersError) {
+        console.error('Error fetching answers:', answersError);
+        throw new Error('فشل في جلب الإجابات');
+      }
+
+      console.log('Answers fetched:', answers);
+
+      // Get user profile data
+      const { data: userProfile, error: profileError } = await supabase
+        .from('users')
+        .select('full_name, email')
+        .eq('id', user?.id)
+        .single();
+
+      if (profileError) {
+        console.warn('Could not fetch user profile:', profileError);
+      }
+
+      console.log('User profile fetched:', userProfile);
+
+      return { 
+        attempt, 
+        answers: answers || [],
+        userProfile: userProfile ? { 
+          name: userProfile.full_name, 
+          email: userProfile.email 
+        } : { email: user?.email }
+      };
+    } catch (error) {
+      console.error('Error in fetchAttemptDetails:', error);
+      throw error;
     }
-
-    console.log('Answers fetched:', answers);
-
-    // Get user profile data
-    const { data: userProfile } = await supabase
-      .from('users')
-      .select('full_name, email')
-      .eq('id', user?.id)
-      .single();
-
-    console.log('User profile fetched:', userProfile);
-
-    return { 
-      attempt, 
-      answers,
-      userProfile: userProfile ? { 
-        name: userProfile.full_name, 
-        email: userProfile.email 
-      } : undefined
-    };
   };
 
   const generatePDF = async (attemptId: string, action: 'view' | 'download' = 'view') => {
@@ -116,8 +125,12 @@ export const usePDFGenerator = () => {
       
       const { attempt, answers, userProfile } = await fetchAttemptDetails(attemptId);
       
-      if (!attempt || !answers || answers.length === 0) {
+      if (!attempt) {
         throw new Error('لم يتم العثور على بيانات الامتحان');
+      }
+
+      if (!answers || answers.length === 0) {
+        throw new Error('لم يتم العثور على إجابات الامتحان');
       }
 
       // Generate PDF with real data including explanations and corrections

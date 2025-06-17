@@ -35,8 +35,10 @@ interface UserProfile {
   email?: string;
 }
 
-// Simple Arabic to Latin transliteration for PDF compatibility
+// Enhanced Arabic to Latin transliteration
 const arabicToLatin = (text: string): string => {
+  if (!text) return '';
+  
   const arabicMap: { [key: string]: string } = {
     'ا': 'a', 'ب': 'b', 'ت': 't', 'ث': 'th', 'ج': 'j', 'ح': 'h',
     'خ': 'kh', 'د': 'd', 'ذ': 'dh', 'ر': 'r', 'ز': 'z', 'س': 's',
@@ -44,16 +46,23 @@ const arabicToLatin = (text: string): string => {
     'غ': 'gh', 'ف': 'f', 'ق': 'q', 'ك': 'k', 'ل': 'l', 'م': 'm',
     'ن': 'n', 'ه': 'h', 'و': 'w', 'ي': 'y', 'ة': 'h', 'ى': 'a',
     'ء': 'a', 'آ': 'aa', 'أ': 'a', 'إ': 'i', 'ؤ': 'u', 'ئ': 'i',
+    // Diacritics - remove them
     'َ': '', 'ُ': '', 'ِ': '', 'ً': '', 'ٌ': '', 'ٍ': '', 'ْ': '',
+    'ّ': '', 'ٰ': '', 'ٱ': 'a', 'ٻ': 'b', 'پ': 'p', 'ٺ': 't',
+    // Punctuation
     ' ': ' ', '-': '-', '(': '(', ')': ')', ':': ':', '.': '.',
-    '،': ',', '؟': '?', '!': '!', '0': '0', '1': '1', '2': '2',
-    '3': '3', '4': '4', '5': '5', '6': '6', '7': '7', '8': '8', '9': '9'
+    '،': ',', '؟': '?', '!': '!', '؛': ';', '«': '"', '»': '"',
+    // Numbers
+    '٠': '0', '١': '1', '٢': '2', '٣': '3', '٤': '4', '٥': '5',
+    '٦': '6', '٧': '7', '٨': '8', '٩': '9',
+    '0': '0', '1': '1', '2': '2', '3': '3', '4': '4', '5': '5',
+    '6': '6', '7': '7', '8': '8', '9': '9'
   };
 
   return text.split('').map(char => arabicMap[char] || char).join('');
 };
 
-// Safe text drawing function with automatic line wrapping
+// Safe text drawing with proper font handling
 const drawSafeText = (
   page: any,
   text: string,
@@ -62,9 +71,10 @@ const drawSafeText = (
   options: any = {}
 ) => {
   try {
-    const safeText = arabicToLatin(text);
+    const safeText = arabicToLatin(text || '');
     const maxWidth = options.maxWidth || 400;
     const fontSize = options.size || 10;
+    const font = options.font; // Must be a PDFFont object, not a string
     
     // Simple word wrapping
     const words = safeText.split(' ');
@@ -91,7 +101,7 @@ const drawSafeText = (
         x,
         y: currentY,
         size: fontSize,
-        font: options.font || StandardFonts.Helvetica,
+        font: font || StandardFonts.Helvetica,
         color: options.color || rgb(0, 0, 0),
       });
       currentY -= fontSize + 2;
@@ -100,6 +110,7 @@ const drawSafeText = (
     return currentY;
   } catch (error) {
     console.error('Error drawing text:', error);
+    // Fallback: draw error message
     page.drawText('Text display error', {
       x,
       y,
