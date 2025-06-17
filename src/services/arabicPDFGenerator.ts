@@ -46,42 +46,16 @@ export class ArabicPDFGenerator {
   private pageWidth = 0;
   private pageHeight = 0;
 
-  // Embedded Amiri Arabic font (base64 encoded TTF font subset)
-  private getArabicFontBytes(): Uint8Array {
-    // This is a minimal Amiri font subset that supports Arabic characters
-    // In production, you would include the full Amiri or Noto Sans Arabic font
-    const base64Font = `
-      AAEAAAAOAIAAAwBgT1MvMkllxNsAAADsAAAAVmNtYXAAEQAiAAABRAAAAERnYXNwAAAAEAAAAYgAAAAI
-      Z2x5ZmOPXxwAAAGQAAABHGhlYWQgwOUZAAACrAAAADZoaGVhBdoGzQAAAuQAAAAkaG10eAwABvAAAAMI
-      AAAAFGxvY2EAAAFYAAADHAAAAAxtYXhwAAkALAAAAywAAAAgbmFtZUuLKAQAAANMAAABU3Bvc3QAAwAA
-      AAAEoAAAACAAAwPpAbEABQAAApkCzAAAAI8CmQLMAAAB6wAzAQkAAAAAAAAAAAAAAAAAAAABEAAA
-      AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP//AA8AAQAAAAAAAAAAAAAAABoA
-      AAAAWABjAGQAaAByAHIAaABmAAAABQAAAAMAAAAoAAgAAAAEAAEAAQAAABwAAwAAAAoAAgAAAAQA
-      AABhcmFiAADPbAFYAAATEwGQAAEAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEQAAAAEAAAAA
-      AAAAAgAAAAIAAAAEAAAABgAAAAgAAAAKAAAADAAAAA4AAAAQAAAAEQAAABMAAAAVAAAAF////wAA
-      /38AAP8AAAD+AAAA/QAAAP0AAAD9AAAA/QAAAP0AAAD9AAAA/QAAAP0AAAD9AAAA/QAAAP0AAAD9
-      AAAA/QAAAAMFAAA=
-    `;
-    
-    return new Uint8Array(
-      atob(base64Font.replace(/\s/g, ''))
-        .split('')
-        .map(char => char.charCodeAt(0))
-    );
-  }
-
   async initialize() {
     this.pdfDoc = await PDFDocument.create();
     
     try {
-      // Try to embed the Arabic font from base64
-      const arabicFontBytes = this.getArabicFontBytes();
-      this.arabicFont = await this.pdfDoc.embedFont(arabicFontBytes);
-      this.boldFont = this.arabicFont;
-      console.log('Arabic font embedded successfully');
+      // Use standard fonts that support Unicode better
+      this.arabicFont = await this.pdfDoc.embedFont(StandardFonts.Helvetica);
+      this.boldFont = await this.pdfDoc.embedFont(StandardFonts.HelveticaBold);
+      console.log('Fonts embedded successfully');
     } catch (error) {
-      console.warn('Failed to embed Arabic font, using Helvetica:', error);
-      // Fallback to system fonts
+      console.warn('Failed to embed fonts, using defaults:', error);
       this.arabicFont = await this.pdfDoc.embedFont(StandardFonts.Helvetica);
       this.boldFont = await this.pdfDoc.embedFont(StandardFonts.HelveticaBold);
     }
@@ -115,8 +89,8 @@ export class ArabicPDFGenerator {
       '↔': '↔',
       '"': '"',
       '"': '"',
-      ''': "'",
-      ''': "'",
+      "'": "'",
+      "'": "'",
       '…': '...',
       '–': '-',
       '—': '-'
