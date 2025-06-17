@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -23,6 +24,7 @@ interface UserAnswer {
   is_correct: boolean;
   question: {
     question_text: string;
+    explanation?: string;
     answers: Array<{
       id: string;
       answer_text: string;
@@ -36,7 +38,9 @@ export const usePDFGenerator = () => {
   const [isGenerating, setIsGenerating] = useState(false);
 
   const fetchAttemptDetails = async (attemptId: string) => {
-    // Fetch attempt details
+    console.log('Fetching attempt details for:', attemptId);
+    
+    // Fetch attempt details with exam info
     const { data: attempt, error: attemptError } = await supabase
       .from('user_attempts')
       .select(`
@@ -51,9 +55,14 @@ export const usePDFGenerator = () => {
       .eq('user_id', user?.id)
       .single();
 
-    if (attemptError) throw attemptError;
+    if (attemptError) {
+      console.error('Error fetching attempt:', attemptError);
+      throw attemptError;
+    }
 
-    // Fetch user answers with questions and all possible answers
+    console.log('Attempt fetched:', attempt);
+
+    // Fetch user answers with questions, all possible answers, and explanations
     const { data: answers, error: answersError } = await supabase
       .from('user_answers')
       .select(`
@@ -63,6 +72,7 @@ export const usePDFGenerator = () => {
         is_correct,
         question:questions(
           question_text,
+          explanation,
           answers(
             id,
             answer_text,
@@ -70,9 +80,15 @@ export const usePDFGenerator = () => {
           )
         )
       `)
-      .eq('attempt_id', attemptId);
+      .eq('attempt_id', attemptId)
+      .order('question_id');
 
-    if (answersError) throw answersError;
+    if (answersError) {
+      console.error('Error fetching answers:', answersError);
+      throw answersError;
+    }
+
+    console.log('Answers fetched:', answers);
 
     // Get user profile data
     const { data: userProfile } = await supabase
@@ -81,19 +97,30 @@ export const usePDFGenerator = () => {
       .eq('id', user?.id)
       .single();
 
+    console.log('User profile fetched:', userProfile);
+
     return { 
       attempt, 
       answers,
-      userProfile: userProfile ? { name: userProfile.full_name, email: userProfile.email } : undefined
+      userProfile: userProfile ? { 
+        name: userProfile.full_name, 
+        email: userProfile.email 
+      } : undefined
     };
   };
 
   const generatePDF = async (attemptId: string, action: 'view' | 'download' = 'view') => {
     setIsGenerating(true);
     try {
+      console.log('Generating PDF for attempt:', attemptId);
+      
       const { attempt, answers, userProfile } = await fetchAttemptDetails(attemptId);
       
-      // Generate PDF with proper Arabic support
+      if (!attempt || !answers || answers.length === 0) {
+        throw new Error('لم يتم العثور على بيانات الامتحان');
+      }
+
+      // Generate PDF with real data including explanations and corrections
       const pdfBlob = await PDFGenerator.generateExamReport(
         attempt as ExamAttempt,
         answers as UserAnswer[],
@@ -105,7 +132,9 @@ export const usePDFGenerator = () => {
         return pdfBlob;
       } else {
         // Download
-        const filename = `تقرير-امتحان-${attempt.exam?.title || 'امتحان'}-${new Date().toISOString().split('T')[0]}.pdf`;
+        const examTitle = attempt.exam?.title || 'امتحان';
+        const date = new Date().toISOString().split('T')[0];
+        const filename = `تقرير-${examTitle}-${date}.pdf`;
         await PDFGenerator.downloadPDF(pdfBlob, filename);
         return null;
       }
