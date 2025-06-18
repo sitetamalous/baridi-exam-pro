@@ -63,84 +63,86 @@ const AppContent = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 rtl">
-      {!isOnline && (
-        <div className="bg-yellow-500 text-white text-center py-2 px-4 text-sm">
-          ⚠️ أنت غير متصل بالإنترنت. بعض الميزات قد لا تعمل بشكل صحيح.
-        </div>
-      )}
+    <>
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 rtl">
+        {!isOnline && (
+          <div className="bg-yellow-500 text-white text-center py-2 px-4 text-sm">
+            ⚠️ أنت غير متصل بالإنترنت. بعض الميزات قد لا تعمل بشكل صحيح.
+          </div>
+        )}
 
-      <Routes>
-        {/* صفحة البداية */}
-        <Route path="/" element={<Home />} />
-        
-        {/* صفحة المصادقة */}
-        <Route path="/auth" element={<Auth />} />
-        
-        {/* إعادة توجيه الصفحات القديمة */}
-        <Route path="/login" element={<Navigate to="/auth" replace />} />
-        <Route path="/register" element={<Navigate to="/auth" replace />} />
+        <Routes>
+          {/* صفحة البداية */}
+          <Route path="/" element={<Home />} />
+          
+          {/* صفحة المصادقة */}
+          <Route path="/auth" element={<Auth />} />
+          
+          {/* إعادة توجيه الصفحات القديمة */}
+          <Route path="/login" element={<Navigate to="/auth" replace />} />
+          <Route path="/register" element={<Navigate to="/auth" replace />} />
 
-        {/* الصفحات المحمية */}
-        <Route path="/dashboard" element={
-          <ProtectedRoute>
-            <Layout>
-              <Dashboard />
-            </Layout>
-          </ProtectedRoute>
-        } />
+          {/* الصفحات المحمية */}
+          <Route path="/dashboard" element={
+            <ProtectedRoute>
+              <Layout>
+                <Dashboard />
+              </Layout>
+            </ProtectedRoute>
+          } />
 
-        <Route path="/results" element={
-          <ProtectedRoute>
-            <Layout>
-              <Results />
-            </Layout>
-          </ProtectedRoute>
-        } />
+          <Route path="/results" element={
+            <ProtectedRoute>
+              <Layout>
+                <Results />
+              </Layout>
+            </ProtectedRoute>
+          } />
 
-        {/* صفحات بدون Layout (استخدام BottomNav) */}
-        <Route path="/exams" element={
-          <ProtectedRoute>
-            <Exams />
-          </ProtectedRoute>
-        } />
+          {/* صفحات بدون Layout (استخدام BottomNav) */}
+          <Route path="/exams" element={
+            <ProtectedRoute>
+              <Exams />
+            </ProtectedRoute>
+          } />
 
-        <Route path="/statistics" element={
-          <ProtectedRoute>
-            <Statistics />
-          </ProtectedRoute>
-        } />
+          <Route path="/statistics" element={
+            <ProtectedRoute>
+              <Statistics />
+            </ProtectedRoute>
+          } />
 
-        <Route path="/profile" element={
-          <ProtectedRoute>
-            <Profile />
-          </ProtectedRoute>
-        } />
+          <Route path="/profile" element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          } />
 
-        {/* صفحات الامتحان (بدون أي layout) */}
-        <Route path="/exam/:examId" element={
-          <ProtectedRoute>
-            <Exam />
-          </ProtectedRoute>
-        } />
+          {/* صفحات الامتحان (بدون أي layout) */}
+          <Route path="/exam/:examId" element={
+            <ProtectedRoute>
+              <Exam />
+            </ProtectedRoute>
+          } />
 
-        <Route path="/exam/:examId/review" element={
-          <ProtectedRoute>
-            <ExamReviewPage />
-          </ProtectedRoute>
-        } />
+          <Route path="/exam/:examId/review" element={
+            <ProtectedRoute>
+              <ExamReviewPage />
+            </ProtectedRoute>
+          } />
 
-        {/* صفحة 404 */}
-        <Route path="*" element={<NotFound />} />
-      </Routes>
+          {/* صفحة 404 */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
 
-      {/* إظهار BottomNav حسب الحاجة */}
-      <ConditionalBottomNav />
+        {/* إظهار BottomNav حسب الحاجة */}
+        <ConditionalBottomNav />
+      </div>
       
-      {/* Toaster components - moved inside AppContent for proper React context */}
+      {/* Toast components placed at the end of the main content */}
       <Toaster />
       <Sonner />
-    </div>
+    </>
   );
 };
 
