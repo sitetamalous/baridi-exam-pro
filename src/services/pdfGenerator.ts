@@ -35,10 +35,18 @@ interface UserProfile {
   email?: string;
 }
 
-// Enhanced Arabic to Latin transliteration
-const arabicToLatin = (text: string): string => {
+// Simple Arabic to Latin transliteration without special characters
+const cleanText = (text: string): string => {
   if (!text) return '';
   
+  // Remove problematic Arabic diacritics and special characters
+  const cleaned = text
+    .replace(/[\u064B-\u065F]/g, '') // Remove Arabic diacritics
+    .replace(/[\u0640]/g, '') // Remove Arabic tatweel
+    .replace(/[\u200C-\u200F]/g, '') // Remove zero-width characters
+    .replace(/[\u202A-\u202E]/g, ''); // Remove directional marks
+  
+  // Simple transliteration map for basic Arabic letters
   const arabicMap: { [key: string]: string } = {
     'ا': 'a', 'ب': 'b', 'ت': 't', 'ث': 'th', 'ج': 'j', 'ح': 'h',
     'خ': 'kh', 'د': 'd', 'ذ': 'dh', 'ر': 'r', 'ز': 'z', 'س': 's',
@@ -46,23 +54,16 @@ const arabicToLatin = (text: string): string => {
     'غ': 'gh', 'ف': 'f', 'ق': 'q', 'ك': 'k', 'ل': 'l', 'م': 'm',
     'ن': 'n', 'ه': 'h', 'و': 'w', 'ي': 'y', 'ة': 'h', 'ى': 'a',
     'ء': 'a', 'آ': 'aa', 'أ': 'a', 'إ': 'i', 'ؤ': 'u', 'ئ': 'i',
-    // Diacritics - remove them
-    'َ': '', 'ُ': '', 'ِ': '', 'ً': '', 'ٌ': '', 'ٍ': '', 'ْ': '',
-    'ّ': '', 'ٰ': '', 'ٱ': 'a', 'ٻ': 'b', 'پ': 'p', 'ٺ': 't',
-    // Punctuation
-    ' ': ' ', '-': '-', '(': '(', ')': ')', ':': ':', '.': '.',
-    '،': ',', '؟': '?', '!': '!', '؛': ';', '«': '"', '»': '"',
-    // Numbers
     '٠': '0', '١': '1', '٢': '2', '٣': '3', '٤': '4', '٥': '5',
     '٦': '6', '٧': '7', '٨': '8', '٩': '9',
-    '0': '0', '1': '1', '2': '2', '3': '3', '4': '4', '5': '5',
-    '6': '6', '7': '7', '8': '8', '9': '9'
+    ' ': ' ', '-': '-', '(': '(', ')': ')', ':': ':', '.': '.',
+    '،': ',', '؟': '?', '!': '!', '؛': ';'
   };
 
-  return text.split('').map(char => arabicMap[char] || char).join('');
+  return cleaned.split('').map(char => arabicMap[char] || char).join('');
 };
 
-// Safe text drawing with proper font handling
+// Safe text drawing function
 const drawSafeText = (
   page: any,
   text: string,
@@ -71,10 +72,10 @@ const drawSafeText = (
   options: any = {}
 ) => {
   try {
-    const safeText = arabicToLatin(text || '');
+    const safeText = cleanText(text || '');
     const maxWidth = options.maxWidth || 400;
     const fontSize = options.size || 10;
-    const font = options.font; // Must be a PDFFont object, not a string
+    const font = options.font;
     
     // Simple word wrapping
     const words = safeText.split(' ');
@@ -83,7 +84,7 @@ const drawSafeText = (
     
     for (const word of words) {
       const testLine = currentLine + (currentLine ? ' ' : '') + word;
-      const testWidth = testLine.length * (fontSize * 0.6); // Rough estimate
+      const testWidth = testLine.length * (fontSize * 0.6);
       
       if (testWidth <= maxWidth) {
         currentLine = testLine;
@@ -101,7 +102,7 @@ const drawSafeText = (
         x,
         y: currentY,
         size: fontSize,
-        font: font || StandardFonts.Helvetica,
+        font: font,
         color: options.color || rgb(0, 0, 0),
       });
       currentY -= fontSize + 2;
@@ -110,12 +111,12 @@ const drawSafeText = (
     return currentY;
   } catch (error) {
     console.error('Error drawing text:', error);
-    // Fallback: draw error message
+    // Fallback: draw simple text
     page.drawText('Text display error', {
       x,
       y,
       size: options.size || 10,
-      font: StandardFonts.Helvetica,
+      font: options.font,
       color: rgb(0.5, 0.5, 0.5),
     });
     return y - 15;
@@ -277,8 +278,8 @@ export class PDFGenerator {
         const userAnswer = answer.question?.answers?.find(a => a.id === answer.selected_answer_id);
         if (userAnswer) {
           const answerColor = answer.is_correct ? rgb(0, 0.8, 0) : rgb(1, 0, 0);
-          const answerStatus = answer.is_correct ? '✓' : '✗';
-          currentY = drawSafeText(currentPage, `${answerStatus} Your Answer: ${userAnswer.answer_text}`, margin, currentY, {
+          const answerStatus = answer.is_correct ? 'Correct' : 'Wrong';
+          currentY = drawSafeText(currentPage, `${answerStatus} - Your Answer: ${userAnswer.answer_text}`, margin, currentY, {
             size: 10,
             font: helvetica,
             color: answerColor,
@@ -291,7 +292,7 @@ export class PDFGenerator {
         if (!answer.is_correct) {
           const correctAnswer = answer.question?.answers?.find(a => a.is_correct);
           if (correctAnswer) {
-            currentY = drawSafeText(currentPage, `✓ Correct Answer: ${correctAnswer.answer_text}`, margin, currentY, {
+            currentY = drawSafeText(currentPage, `Correct Answer: ${correctAnswer.answer_text}`, margin, currentY, {
               size: 10,
               font: helvetica,
               color: rgb(0, 0.8, 0),
