@@ -139,7 +139,7 @@ const AppContent = () => {
         <ConditionalBottomNav />
       </div>
       
-      {/* Toaster components inside React context */}
+      {/* Toaster components moved inside React context */}
       <Toaster />
       <Sonner />
     </>
