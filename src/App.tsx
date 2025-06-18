@@ -138,7 +138,7 @@ const AppContent = () => {
         <ConditionalBottomNav />
       </div>
       
-      {/* Add Toaster component for toast notifications */}
+      {/* Add Toaster component for toast notifications - inside the router context */}
       <Toaster />
     </>
   );
