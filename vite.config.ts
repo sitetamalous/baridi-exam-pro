@@ -9,7 +9,7 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
-    force: true, // Force dependency re-optimization
+    force: true,
   },
   plugins: [
     react(),
@@ -22,15 +22,14 @@ export default defineConfig(({ mode }) => ({
   },
   optimizeDeps: {
     include: [
-      'pdf-lib',
+      'pdfmake/build/pdfmake',
       'react-pdf',
       'react-pdf/dist/esm/entry.webpack',
       'buffer',
       'stream',
       'util'
     ],
-    exclude: ['pdfmake', 'fontkit'], // Explicitly exclude fontkit to prevent import issues
-    force: true, // Force dependency re-optimization
+    force: true,
     esbuildOptions: {
       define: {
         global: 'globalThis',
@@ -39,13 +38,13 @@ export default defineConfig(({ mode }) => ({
   },
   build: {
     commonjsOptions: {
-      include: [/pdf-lib/, /react-pdf/, /node_modules/],
+      include: [/pdfmake/, /react-pdf/, /node_modules/],
       transformMixedEsModules: true,
     },
     rollupOptions: {
       output: {
         manualChunks: (id) => {
-          if (id.includes('pdf-lib') || id.includes('react-pdf')) {
+          if (id.includes('pdfmake') || id.includes('react-pdf')) {
             return 'pdf-libs';
           }
           if (id.includes('node_modules')) {
@@ -59,6 +58,5 @@ export default defineConfig(({ mode }) => ({
     global: 'globalThis',
     'process.env': {},
   },
-  // Clear cache on startup
   cacheDir: '.vite-new'
 }));

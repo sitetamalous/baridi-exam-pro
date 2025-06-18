@@ -12,7 +12,7 @@ const PDFTestComponent: React.FC = () => {
   const [viewerOpen, setViewerOpen] = useState(false);
   const { toast } = useToast();
 
-  // Sample test data
+  // Updated sample data with more Arabic content
   const sampleAttempt = {
     id: 'test-attempt-1',
     score: 8,
@@ -21,8 +21,8 @@ const PDFTestComponent: React.FC = () => {
     started_at: new Date(Date.now() - 3600000).toISOString(),
     exam: {
       id: 'test-exam-1',
-      title: 'اختبار تجريبي - مكلف بالزبائن',
-      description: 'اختبار شامل للتحضير لمسابقة مكلف بالزبائن في بريد الجزائر'
+      title: 'اختبار تجريبي - مكلف بالزبائن في بريد الجزائر',
+      description: 'اختبار شامل للتحضير لمسابقة مكلف بالزبائن في بريد الجزائر - يشمل جميع المواضيع المطلوبة'
     }
   };
 
@@ -34,6 +34,7 @@ const PDFTestComponent: React.FC = () => {
       is_correct: true,
       question: {
         question_text: 'ما هو الموقع الرسمي الذي يمكن من خلاله طلب البطاقة الذهبية؟',
+        explanation: 'الموقع الرسمي لطلب البطاقة الذهبية هو eccp.poste.dz وهو الموقع المعتمد من طرف بريد الجزائر.',
         answers: [
           { id: 'a1-1', answer_text: 'baridi.dz', is_correct: false },
           { id: 'a1-2', answer_text: 'e.poste.dz', is_correct: false },
@@ -49,6 +50,7 @@ const PDFTestComponent: React.FC = () => {
       is_correct: false,
       question: {
         question_text: 'ما هي مدة صلاحية البطاقة الذهبية؟',
+        explanation: 'مدة صلاحية البطاقة الذهبية هي سنتين من تاريخ صناعتها وليس من تاريخ الاستلام أو الطلب.',
         answers: [
           { id: 'a2-wrong', answer_text: 'سنة واحدة من تاريخ الاستلام', is_correct: false },
           { id: 'a2-2', answer_text: 'ثلاث سنوات من تاريخ الطلب', is_correct: false },
@@ -64,6 +66,7 @@ const PDFTestComponent: React.FC = () => {
       is_correct: true,
       question: {
         question_text: 'في حال نسي الزبون الرمز السري للبطاقة الذهبية، ما هو الإجراء المناسب؟',
+        explanation: 'في حالة نسيان الرمز السري، يجب على الزبون التوجه إلى المكتب البريدي مع بطاقة الهوية وتقديم طلب خطي لإعادة تعيين الرمز.',
         answers: [
           { id: 'a3-1', answer_text: 'الاتصال بخدمة الزبائن هاتفياً', is_correct: false },
           { id: 'a3-2', answer_text: 'تقديم طلب إلكتروني عبر موقع بريد الجزائر', is_correct: false },
