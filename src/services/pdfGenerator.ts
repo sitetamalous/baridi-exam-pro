@@ -140,8 +140,14 @@ export class PDFGenerator {
       yPosition += lineHeight;
 
       // Score with color
-      const scoreColor = percentage >= 70 ? [0, 200, 0] : percentage >= 50 ? [255, 150, 0] : [255, 0, 0];
-      doc.setTextColor(...scoreColor);
+      if (percentage >= 70) {
+        doc.setTextColor(0, 200, 0);
+      } else if (percentage >= 50) {
+        doc.setTextColor(255, 150, 0);
+      } else {
+        doc.setTextColor(255, 0, 0);
+      }
+      
       doc.setFontSize(14);
       doc.text(`Final Score: ${attempt.score}/${totalQuestions} (${percentage.toFixed(1)}%)`, margin, yPosition);
       yPosition += lineHeight;
@@ -179,9 +185,12 @@ export class PDFGenerator {
         // User's answer
         const userAnswer = answer.question?.answers?.find(a => a.id === answer.selected_answer_id);
         if (userAnswer) {
-          const answerColor = answer.is_correct ? [0, 200, 0] : [255, 0, 0];
           const answerStatus = answer.is_correct ? 'Correct' : 'Wrong';
-          doc.setTextColor(...answerColor);
+          if (answer.is_correct) {
+            doc.setTextColor(0, 200, 0);
+          } else {
+            doc.setTextColor(255, 0, 0);
+          }
           addWrappedText(`${answerStatus} - Your Answer: ${userAnswer.answer_text}`, margin, yPosition, pageWidth - 2 * margin);
         }
 
