@@ -23,11 +23,9 @@ export default defineConfig(({ mode }) => ({
   optimizeDeps: {
     include: [
       'pdfmake/build/pdfmake',
+      'pdfmake/build/vfs_fonts',
       'react-pdf',
-      'react-pdf/dist/esm/entry.webpack',
-      'buffer',
-      'stream',
-      'util'
+      'react-pdf/dist/esm/entry.webpack'
     ],
     force: true,
     esbuildOptions: {
@@ -44,7 +42,10 @@ export default defineConfig(({ mode }) => ({
     rollupOptions: {
       output: {
         manualChunks: (id) => {
-          if (id.includes('pdfmake') || id.includes('react-pdf')) {
+          if (id.includes('pdfmake')) {
+            return 'pdf-libs';
+          }
+          if (id.includes('react-pdf')) {
             return 'pdf-libs';
           }
           if (id.includes('node_modules')) {

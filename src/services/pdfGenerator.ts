@@ -1,6 +1,9 @@
 
 import pdfMake from 'pdfmake/build/pdfmake';
-import { createFontConfig } from './fontConfig';
+import pdfFonts from 'pdfmake/build/vfs_fonts';
+
+// Initialize pdfMake with fonts
+pdfMake.vfs = pdfFonts.pdfMake.vfs;
 
 interface ExamAttempt {
   id: string;
@@ -43,21 +46,19 @@ export class PDFGenerator {
     if (this.isInitialized) return;
     
     try {
-      const fontConfig = createFontConfig();
-      pdfMake.fonts = fontConfig;
+      // Use default fonts that support Arabic
+      pdfMake.fonts = {
+        Roboto: {
+          normal: 'Roboto-Regular.ttf',
+          bold: 'Roboto-Medium.ttf',
+          italics: 'Roboto-Italic.ttf',
+          bolditalics: 'Roboto-MediumItalic.ttf'
+        }
+      };
       this.isInitialized = true;
       console.log('PDFMake fonts initialized successfully');
     } catch (error) {
       console.error('Error initializing fonts:', error);
-      // Fallback to default fonts
-      pdfMake.fonts = {
-        Roboto: {
-          normal: 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Regular.ttf',
-          bold: 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Medium.ttf',
-          italics: 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Italic.ttf',
-          bolditalics: 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-MediumItalic.ttf'
-        }
-      };
       this.isInitialized = true;
     }
   }
@@ -75,24 +76,6 @@ export class PDFGenerator {
     const totalQuestions = answers.length;
     const percentage = attempt.percentage || 0;
     
-    // Helper function to detect Arabic text
-    const isArabic = (text: string) => /[\u0600-\u06FF\u0750-\u077F]/.test(text);
-    
-    // Helper function to get appropriate font and alignment
-    const getTextStyle = (text: string) => {
-      if (isArabic(text)) {
-        return {
-          font: 'NotoSansArabic',
-          alignment: 'right' as const,
-          direction: 'rtl' as const
-        };
-      }
-      return {
-        font: 'Roboto',
-        alignment: 'left' as const
-      };
-    };
-
     const docDefinition: any = {
       pageSize: 'A4',
       pageMargins: [40, 60, 40, 60],
@@ -110,46 +93,32 @@ export class PDFGenerator {
           margin: [0, 0, 0, 20]
         },
         
-        // Exam Title
+        // Exam Title (handle Arabic if present)
         {
           text: attempt.exam?.title || 'امتحان',
           style: 'examTitle',
-          ...getTextStyle(attempt.exam?.title || 'امتحان'),
+          alignment: 'center',
           margin: [0, 0, 0, 10]
         },
         
-        // Exam Description
-        ...(attempt.exam?.description ? [{
-          text: attempt.exam.description,
-          style: 'description',
-          ...getTextStyle(attempt.exam.description),
-          margin: [0, 0, 0, 15]
-        }] : []),
-        
         // Student Info
         {
-          text: `الطالب: ${userProfile?.name || userProfile?.email || 'Student'}`,
+          text: `Student: ${userProfile?.name || userProfile?.email || 'Student'}`,
           style: 'studentInfo',
-          font: 'NotoSansArabic',
-          alignment: 'right',
           margin: [0, 0, 0, 5]
         },
         
         // Date and Time
         {
-          text: `التاريخ: ${new Date(attempt.completed_at).toLocaleDateString('ar-SA')} في ${new Date(attempt.completed_at).toLocaleTimeString('ar-SA')}`,
+          text: `Date: ${new Date(attempt.completed_at).toLocaleDateString()} at ${new Date(attempt.completed_at).toLocaleTimeString()}`,
           style: 'dateInfo',
-          font: 'NotoSansArabic',
-          alignment: 'right',
           margin: [0, 0, 0, 20]
         },
         
         // Results Summary
         {
-          text: 'ملخص النتائج',
+          text: 'Results Summary',
           style: 'sectionHeader',
-          font: 'NotoSansArabic',
-          alignment: 'right',
           margin: [0, 0, 0, 10]
         },
         
@@ -158,22 +127,21 @@ export class PDFGenerator {
             widths: ['50%', '50%'],
             body: [
               [
-                { text: 'إجمالي الأسئلة', font: 'NotoSansArabic', alignment: 'right' },
-                { text: totalQuestions.toString(), font: 'Roboto', alignment: 'center' }
+                { text: 'Total Questions', alignment: 'left' },
+                { text: totalQuestions.toString(), alignment: 'center' }
               ],
               [
-                { text: 'الإجابات الصحيحة', font: 'NotoSansArabic', alignment: 'right' },
-                { text: correctAnswers.toString(), font: 'Roboto', alignment: 'center' }
+                { text: 'Correct Answers', alignment: 'left' },
+                { text: correctAnswers.toString(), alignment: 'center' }
               ],
               [
-                { text: 'الإجابات الخاطئة', font: 'NotoSansArabic', alignment: 'right' },
-                { text: (totalQuestions - correctAnswers).toString(), font: 'Roboto', alignment: 'center' }
+                { text: 'Wrong Answers', alignment: 'left' },
+                { text: (totalQuestions - correctAnswers).toString(), alignment: 'center' }
               ],
               [
-                { text: 'النتيجة النهائية', font: 'NotoSansArabic', alignment: 'right', bold: true },
+                { text: 'Final Score', alignment: 'left', bold: true },
                 { 
                   text: `${attempt.score}/${totalQuestions} (${percentage.toFixed(1)}%)`,
-                  font: 'Roboto',
                   alignment: 'center',
                   bold: true,
                   color: percentage >= 70 ? '#00A651' : percentage >= 50 ? '#FF9500' : '#FF0000'
@@ -187,20 +155,17 @@ export class PDFGenerator {
         
         // Performance Assessment
         {
-          text: `التقييم: ${percentage >= 70 ? 'ممتاز' : percentage >= 50 ? 'جيد' : 'يحتاج تحسين'}`,
+          text: `Assessment: ${percentage >= 70 ? 'Excellent' : percentage >= 50 ? 'Good' : 'Needs Improvement'}`,
           style: 'performance',
-          font: 'NotoSansArabic',
-          alignment: 'right',
+          alignment: 'center',
           color: percentage >= 70 ? '#00A651' : percentage >= 50 ? '#FF9500' : '#FF0000',
           margin: [0, 0, 0, 30]
         },
         
-        // Detailed Questions Review
+        // Questions Review
         {
-          text: 'مراجعة تفصيلية للأسئلة',
+          text: 'Detailed Questions Review',
           style: 'sectionHeader',
-          font: 'NotoSansArabic',
-          alignment: 'right',
           margin: [0, 0, 0, 15]
         },
         
@@ -211,38 +176,28 @@ export class PDFGenerator {
           
           return [
             {
-              text: `السؤال ${index + 1}:`,
+              text: `Question ${index + 1}:`,
               style: 'questionNumber',
-              font: 'NotoSansArabic',
-              alignment: 'right',
               color: '#00A651',
               margin: [0, 15, 0, 5]
             },
             {
               text: answer.question?.question_text || '',
               style: 'questionText',
-              font: 'NotoSansArabic',
-              alignment: 'right',
               margin: [0, 0, 0, 10]
             },
             {
-              text: `${answer.is_correct ? '✓ صحيح' : '✗ خطأ'} - إجابتك: ${userAnswer?.answer_text || ''}`,
-              font: 'NotoSansArabic',
-              alignment: 'right',
+              text: `${answer.is_correct ? 'Correct' : 'Wrong'} - Your answer: ${userAnswer?.answer_text || ''}`,
               color: answer.is_correct ? '#00A651' : '#FF0000',
               margin: [0, 0, 0, 5]
             },
             ...((!answer.is_correct && correctAnswer) ? [{
-              text: `الإجابة الصحيحة: ${correctAnswer.answer_text}`,
-              font: 'NotoSansArabic',
-              alignment: 'right',
+              text: `Correct answer: ${correctAnswer.answer_text}`,
               color: '#00A651',
               margin: [0, 0, 0, 5]
             }] : []),
             ...(answer.question?.explanation ? [{
-              text: `الشرح: ${answer.question.explanation}`,
-              font: 'NotoSansArabic',
-              alignment: 'right',
+              text: `Explanation: ${answer.question.explanation}`,
               fontSize: 9,
               color: '#666666',
               margin: [0, 5, 0, 10]
@@ -273,9 +228,6 @@ export class PDFGenerator {
           fontSize: 16,
           bold: true
         },
-        description: {
-          fontSize: 11
-        },
         studentInfo: {
           fontSize: 12,
           bold: true
@@ -301,10 +253,9 @@ export class PDFGenerator {
       },
       
       footer: (currentPage: number, pageCount: number) => ({
-        text: `تم إنشاؤه في: ${new Date().toLocaleDateString('ar-SA')} | نظام امتحانات بريد الجزائر | صفحة ${currentPage} من ${pageCount}`,
+        text: `Generated on: ${new Date().toLocaleDateString()} | Algeria Post Exam System | Page ${currentPage} of ${pageCount}`,
         alignment: 'center',
         fontSize: 8,
-        font: 'NotoSansArabic',
         margin: [0, 10, 0, 0]
       })
     };
