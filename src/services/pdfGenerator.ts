@@ -1,9 +1,14 @@
-
 import pdfMake from 'pdfmake/build/pdfmake';
 import pdfFonts from 'pdfmake/build/vfs_fonts';
 
-// Initialize pdfMake with fonts - fix the vfs access
-pdfMake.vfs = pdfFonts.vfs;
+// Initialize pdfMake with fonts - handle undefined vfs_fonts gracefully
+if (pdfFonts && pdfFonts.pdfMake && pdfFonts.pdfMake.vfs) {
+  pdfMake.vfs = pdfFonts.pdfMake.vfs;
+} else if (pdfFonts && pdfFonts.vfs) {
+  pdfMake.vfs = pdfFonts.vfs;
+} else {
+  console.warn('pdfMake fonts not loaded, using default fonts');
+}
 
 interface ExamAttempt {
   id: string;
