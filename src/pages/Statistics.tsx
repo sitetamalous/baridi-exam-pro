@@ -12,10 +12,11 @@ import {
   ResponsiveContainer,
   CartesianGrid,
 } from "recharts";
-import { BadgeCheck, TrendingUp, BarChart3, X as XIcon, Check as CheckIcon, RotateCcw } from "lucide-react";
+import { BadgeCheck, TrendingUp, BarChart3, X as XIcon, Check as CheckIcon, RotateCcw, FileText } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import PDFDownloadButton from "@/components/PDFDownloadButton";
 import { format } from "date-fns";
 import { arDZ } from "date-fns/locale/ar-DZ";
 import classNames from "clsx";
@@ -262,16 +263,24 @@ const Statistics: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Action Button */}
+                  {/* Action Buttons */}
                   <div className="flex gap-2 pt-2 border-t border-gray-100">
                     <Button
                       size="sm"
-                      className="flex-1 text-xs bg-algeria-green hover:bg-algeria-green/90"
+                      variant="outline"
+                      className="flex-1 text-xs"
                       onClick={() => handleRetakeExam(attempt.exam_id)}
                     >
                       <RotateCcw className="w-4 h-4 ml-1" />
                       إعادة الامتحان
                     </Button>
+                    
+                    <PDFDownloadButton
+                      attemptId={attempt.id}
+                      examTitle={attempt.exam?.title}
+                      size="sm"
+                      className="flex-1"
+                    />
                   </div>
                 </div>
               </Card>
