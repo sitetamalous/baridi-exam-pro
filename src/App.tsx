@@ -46,7 +46,7 @@ const ConditionalBottomNav = () => {
   return <BottomNav />;
 };
 
-const App = () => {
+const AppContent = () => {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
 
   useEffect(() => {
@@ -63,86 +63,93 @@ const App = () => {
   }, []);
 
   return (
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 rtl">
+      {!isOnline && (
+        <div className="bg-yellow-500 text-white text-center py-2 px-4 text-sm">
+          ⚠️ أنت غير متصل بالإنترنت. بعض الميزات قد لا تعمل بشكل صحيح.
+        </div>
+      )}
+
+      <Routes>
+        {/* صفحة البداية */}
+        <Route path="/" element={<Home />} />
+        
+        {/* صفحة المصادقة */}
+        <Route path="/auth" element={<Auth />} />
+        
+        {/* إعادة توجيه الصفحات القديمة */}
+        <Route path="/login" element={<Navigate to="/auth" replace />} />
+        <Route path="/register" element={<Navigate to="/auth" replace />} />
+
+        {/* الصفحات المحمية */}
+        <Route path="/dashboard" element={
+          <ProtectedRoute>
+            <Layout>
+              <Dashboard />
+            </Layout>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/results" element={
+          <ProtectedRoute>
+            <Layout>
+              <Results />
+            </Layout>
+          </ProtectedRoute>
+        } />
+
+        {/* صفحات بدون Layout (استخدام BottomNav) */}
+        <Route path="/exams" element={
+          <ProtectedRoute>
+            <Exams />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/statistics" element={
+          <ProtectedRoute>
+            <Statistics />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/profile" element={
+          <ProtectedRoute>
+            <Profile />
+          </ProtectedRoute>
+        } />
+
+        {/* صفحات الامتحان (بدون أي layout) */}
+        <Route path="/exam/:examId" element={
+          <ProtectedRoute>
+            <Exam />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/exam/:examId/review" element={
+          <ProtectedRoute>
+            <ExamReviewPage />
+          </ProtectedRoute>
+        } />
+
+        {/* صفحة 404 */}
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+
+      {/* إظهار BottomNav حسب الحاجة */}
+      <ConditionalBottomNav />
+      
+      {/* Move toasters inside the React context */}
+      <Toaster />
+      <Sonner />
+    </div>
+  );
+};
+
+const App = () => {
+  return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <BrowserRouter>
-          <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 rtl">
-            {!isOnline && (
-              <div className="bg-yellow-500 text-white text-center py-2 px-4 text-sm">
-                ⚠️ أنت غير متصل بالإنترنت. بعض الميزات قد لا تعمل بشكل صحيح.
-              </div>
-            )}
-
-            <Routes>
-              {/* صفحة البداية */}
-              <Route path="/" element={<Home />} />
-              
-              {/* صفحة المصادقة */}
-              <Route path="/auth" element={<Auth />} />
-              
-              {/* إعادة توجيه الصفحات القديمة */}
-              <Route path="/login" element={<Navigate to="/auth" replace />} />
-              <Route path="/register" element={<Navigate to="/auth" replace />} />
-
-              {/* الصفحات المحمية */}
-              <Route path="/dashboard" element={
-                <ProtectedRoute>
-                  <Layout>
-                    <Dashboard />
-                  </Layout>
-                </ProtectedRoute>
-              } />
-
-              <Route path="/results" element={
-                <ProtectedRoute>
-                  <Layout>
-                    <Results />
-                  </Layout>
-                </ProtectedRoute>
-              } />
-
-              {/* صفحات بدون Layout (استخدام BottomNav) */}
-              <Route path="/exams" element={
-                <ProtectedRoute>
-                  <Exams />
-                </ProtectedRoute>
-              } />
-
-              <Route path="/statistics" element={
-                <ProtectedRoute>
-                  <Statistics />
-                </ProtectedRoute>
-              } />
-
-              <Route path="/profile" element={
-                <ProtectedRoute>
-                  <Profile />
-                </ProtectedRoute>
-              } />
-
-              {/* صفحات الامتحان (بدون أي layout) */}
-              <Route path="/exam/:examId" element={
-                <ProtectedRoute>
-                  <Exam />
-                </ProtectedRoute>
-              } />
-
-              <Route path="/exam/:examId/review" element={
-                <ProtectedRoute>
-                  <ExamReviewPage />
-                </ProtectedRoute>
-              } />
-
-              {/* صفحة 404 */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-
-            {/* إظهار BottomNav حسب الحاجة */}
-            <ConditionalBottomNav />
-          </div>
-          
-          <Toaster />
-          <Sonner />
+          <AppContent />
         </BrowserRouter>
       </AuthProvider>
     </QueryClientProvider>
