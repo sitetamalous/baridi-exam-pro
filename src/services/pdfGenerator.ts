@@ -1,5 +1,5 @@
 
-import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
+import jsPDF from 'jspdf';
 
 interface ExamAttempt {
   id: string;
@@ -35,94 +35,6 @@ interface UserProfile {
   email?: string;
 }
 
-// Simple Arabic to Latin transliteration without special characters
-const cleanText = (text: string): string => {
-  if (!text) return '';
-  
-  // Remove problematic Arabic diacritics and special characters
-  const cleaned = text
-    .replace(/[\u064B-\u065F]/g, '') // Remove Arabic diacritics
-    .replace(/[\u0640]/g, '') // Remove Arabic tatweel
-    .replace(/[\u200C-\u200F]/g, '') // Remove zero-width characters
-    .replace(/[\u202A-\u202E]/g, ''); // Remove directional marks
-  
-  // Simple transliteration map for basic Arabic letters
-  const arabicMap: { [key: string]: string } = {
-    'ا': 'a', 'ب': 'b', 'ت': 't', 'ث': 'th', 'ج': 'j', 'ح': 'h',
-    'خ': 'kh', 'د': 'd', 'ذ': 'dh', 'ر': 'r', 'ز': 'z', 'س': 's',
-    'ش': 'sh', 'ص': 's', 'ض': 'd', 'ط': 't', 'ظ': 'z', 'ع': 'a',
-    'غ': 'gh', 'ف': 'f', 'ق': 'q', 'ك': 'k', 'ل': 'l', 'م': 'm',
-    'ن': 'n', 'ه': 'h', 'و': 'w', 'ي': 'y', 'ة': 'h', 'ى': 'a',
-    'ء': 'a', 'آ': 'aa', 'أ': 'a', 'إ': 'i', 'ؤ': 'u', 'ئ': 'i',
-    '٠': '0', '١': '1', '٢': '2', '٣': '3', '٤': '4', '٥': '5',
-    '٦': '6', '٧': '7', '٨': '8', '٩': '9',
-    ' ': ' ', '-': '-', '(': '(', ')': ')', ':': ':', '.': '.',
-    '،': ',', '؟': '?', '!': '!', '؛': ';'
-  };
-
-  return cleaned.split('').map(char => arabicMap[char] || char).join('');
-};
-
-// Safe text drawing function
-const drawSafeText = (
-  page: any,
-  text: string,
-  x: number,
-  y: number,
-  options: any = {}
-) => {
-  try {
-    const safeText = cleanText(text || '');
-    const maxWidth = options.maxWidth || 400;
-    const fontSize = options.size || 10;
-    const font = options.font;
-    
-    // Simple word wrapping
-    const words = safeText.split(' ');
-    let lines = [];
-    let currentLine = '';
-    
-    for (const word of words) {
-      const testLine = currentLine + (currentLine ? ' ' : '') + word;
-      const testWidth = testLine.length * (fontSize * 0.6);
-      
-      if (testWidth <= maxWidth) {
-        currentLine = testLine;
-      } else {
-        if (currentLine) lines.push(currentLine);
-        currentLine = word;
-      }
-    }
-    if (currentLine) lines.push(currentLine);
-    
-    // Draw lines
-    let currentY = y;
-    for (const line of lines) {
-      page.drawText(line, {
-        x,
-        y: currentY,
-        size: fontSize,
-        font: font,
-        color: options.color || rgb(0, 0, 0),
-      });
-      currentY -= fontSize + 2;
-    }
-    
-    return currentY;
-  } catch (error) {
-    console.error('Error drawing text:', error);
-    // Fallback: draw simple text
-    page.drawText('Text display error', {
-      x,
-      y,
-      size: options.size || 10,
-      font: options.font,
-      color: rgb(0.5, 0.5, 0.5),
-    });
-    return y - 15;
-  }
-};
-
 export class PDFGenerator {
   static async generateExamReport(
     attempt: ExamAttempt,
@@ -130,213 +42,192 @@ export class PDFGenerator {
     userProfile?: UserProfile
   ): Promise<Blob> {
     try {
-      console.log('Starting PDF generation...');
+      console.log('Starting PDF generation with jsPDF...');
       
-      const pdfDoc = await PDFDocument.create();
-      const helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
-      const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+      // Create new PDF document
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      // Set font for better Arabic support
+      doc.setFont('helvetica');
       
-      let pages = [];
-      let currentPage = pdfDoc.addPage([595.28, 841.89]); // A4 size
-      pages.push(currentPage);
+      let yPosition = 20;
+      const margin = 20;
+      const lineHeight = 8;
+      const pageHeight = 297; // A4 height in mm
+      const pageWidth = 210; // A4 width in mm
       
-      const { width, height } = currentPage.getSize();
-      let currentY = height - 50;
-      const margin = 50;
-      const lineHeight = 20;
-      
+      // Helper function to add new page if needed
+      const checkPageBreak = (neededSpace: number = 20) => {
+        if (yPosition + neededSpace > pageHeight - 20) {
+          doc.addPage();
+          yPosition = 20;
+        }
+      };
+
+      // Helper function for text wrapping
+      const addWrappedText = (text: string, x: number, y: number, maxWidth: number, fontSize: number = 10) => {
+        doc.setFontSize(fontSize);
+        const lines = doc.splitTextToSize(text, maxWidth);
+        
+        for (let i = 0; i < lines.length; i++) {
+          checkPageBreak();
+          doc.text(lines[i], x, yPosition);
+          yPosition += lineHeight;
+        }
+        return yPosition;
+      };
+
       // Header
-      drawSafeText(currentPage, 'Algeria Post Exam Report', margin, currentY, {
-        size: 20,
-        font: helveticaBold,
-        color: rgb(0, 0.65, 0.32),
-      });
-      currentY -= lineHeight * 2;
-      
+      doc.setFontSize(20);
+      doc.setTextColor(0, 166, 81); // Algeria green
+      doc.text('Algeria Post Exam Report', margin, yPosition);
+      yPosition += lineHeight * 2;
+
       // Exam Details
+      doc.setFontSize(14);
+      doc.setTextColor(0, 0, 0);
       const examTitle = attempt.exam?.title || 'Exam';
-      drawSafeText(currentPage, `Exam: ${examTitle}`, margin, currentY, {
-        size: 14,
-        font: helveticaBold,
-        maxWidth: width - 2 * margin,
-      });
-      currentY -= lineHeight;
-      
+      addWrappedText(`Exam: ${examTitle}`, margin, yPosition, pageWidth - 2 * margin, 14);
+      yPosition += lineHeight;
+
       if (attempt.exam?.description) {
-        currentY = drawSafeText(currentPage, `Description: ${attempt.exam.description}`, margin, currentY, {
-          size: 10,
-          font: helvetica,
-          maxWidth: width - 2 * margin,
-        });
-        currentY -= 10;
+        doc.setFontSize(10);
+        addWrappedText(`Description: ${attempt.exam.description}`, margin, yPosition, pageWidth - 2 * margin);
+        yPosition += lineHeight;
       }
-      
+
       // Student Info
       const studentName = userProfile?.name || userProfile?.email || 'Student';
-      drawSafeText(currentPage, `Student: ${studentName}`, margin, currentY, {
-        size: 12,
-        font: helvetica,
-      });
-      currentY -= lineHeight;
-      
+      doc.setFontSize(12);
+      doc.text(`Student: ${studentName}`, margin, yPosition);
+      yPosition += lineHeight;
+
       // Exam Date and Duration
       const examDate = new Date(attempt.completed_at).toLocaleDateString('en-US');
       const examTime = new Date(attempt.completed_at).toLocaleTimeString('en-US');
-      drawSafeText(currentPage, `Date: ${examDate} at ${examTime}`, margin, currentY, {
-        size: 10,
-        font: helvetica,
-      });
-      currentY -= lineHeight;
-      
+      doc.setFontSize(10);
+      doc.text(`Date: ${examDate} at ${examTime}`, margin, yPosition);
+      yPosition += lineHeight;
+
       const startTime = new Date(attempt.started_at);
       const endTime = new Date(attempt.completed_at);
       const duration = Math.round((endTime.getTime() - startTime.getTime()) / (1000 * 60));
-      drawSafeText(currentPage, `Duration: ${duration} minutes`, margin, currentY, {
-        size: 10,
-        font: helvetica,
-      });
-      currentY -= lineHeight * 2;
-      
+      doc.text(`Duration: ${duration} minutes`, margin, yPosition);
+      yPosition += lineHeight * 2;
+
       // Results Summary
-      drawSafeText(currentPage, 'Results Summary:', margin, currentY, {
-        size: 16,
-        font: helveticaBold,
-      });
-      currentY -= lineHeight;
-      
+      doc.setFontSize(16);
+      doc.setTextColor(0, 0, 0);
+      doc.text('Results Summary:', margin, yPosition);
+      yPosition += lineHeight * 1.5;
+
       const correctAnswers = answers.filter(a => a.is_correct).length;
       const totalQuestions = answers.length;
       const percentage = attempt.percentage || 0;
-      
-      drawSafeText(currentPage, `Total Questions: ${totalQuestions}`, margin, currentY, {
-        font: helvetica,
-      });
-      currentY -= lineHeight;
-      
-      drawSafeText(currentPage, `Correct Answers: ${correctAnswers}`, margin, currentY, {
-        font: helvetica,
-      });
-      currentY -= lineHeight;
-      
-      drawSafeText(currentPage, `Wrong Answers: ${totalQuestions - correctAnswers}`, margin, currentY, {
-        font: helvetica,
-      });
-      currentY -= lineHeight;
-      
-      const scoreColor = percentage >= 70 ? rgb(0, 0.8, 0) : percentage >= 50 ? rgb(1, 0.6, 0) : rgb(1, 0, 0);
-      drawSafeText(currentPage, `Final Score: ${attempt.score}/${totalQuestions} (${percentage.toFixed(1)}%)`, margin, currentY, {
-        color: scoreColor,
-        font: helveticaBold,
-        size: 14,
-      });
-      currentY -= lineHeight;
-      
+
+      doc.setFontSize(10);
+      doc.text(`Total Questions: ${totalQuestions}`, margin, yPosition);
+      yPosition += lineHeight;
+
+      doc.text(`Correct Answers: ${correctAnswers}`, margin, yPosition);
+      yPosition += lineHeight;
+
+      doc.text(`Wrong Answers: ${totalQuestions - correctAnswers}`, margin, yPosition);
+      yPosition += lineHeight;
+
+      // Score with color
+      const scoreColor = percentage >= 70 ? [0, 200, 0] : percentage >= 50 ? [255, 150, 0] : [255, 0, 0];
+      doc.setTextColor(...scoreColor);
+      doc.setFontSize(14);
+      doc.text(`Final Score: ${attempt.score}/${totalQuestions} (${percentage.toFixed(1)}%)`, margin, yPosition);
+      yPosition += lineHeight;
+
       const performance = percentage >= 70 ? 'Excellent' : percentage >= 50 ? 'Good' : 'Needs Improvement';
-      drawSafeText(currentPage, `Performance: ${performance}`, margin, currentY, {
-        size: 12,
-        font: helveticaBold,
-        color: scoreColor,
-      });
-      currentY -= lineHeight * 2;
-      
+      doc.setFontSize(12);
+      doc.text(`Performance: ${performance}`, margin, yPosition);
+      yPosition += lineHeight * 2;
+
+      // Reset color
+      doc.setTextColor(0, 0, 0);
+
       // Detailed Questions Review
-      drawSafeText(currentPage, 'Detailed Questions Review:', margin, currentY, {
-        size: 16,
-        font: helveticaBold,
-      });
-      currentY -= lineHeight * 1.5;
-      
+      doc.setFontSize(16);
+      doc.text('Detailed Questions Review:', margin, yPosition);
+      yPosition += lineHeight * 1.5;
+
       // Process each question
       answers.forEach((answer, index) => {
-        // Check if we need a new page
-        if (currentY < 150) {
-          currentPage = pdfDoc.addPage([595.28, 841.89]);
-          pages.push(currentPage);
-          currentY = height - 50;
-        }
-        
+        checkPageBreak(40);
+
         // Question header
-        const questionHeader = `Question ${index + 1}:`;
-        drawSafeText(currentPage, questionHeader, margin, currentY, {
-          size: 12,
-          font: helveticaBold,
-          color: rgb(0, 0.65, 0.32),
-        });
-        currentY -= lineHeight;
-        
+        doc.setFontSize(12);
+        doc.setTextColor(0, 166, 81);
+        doc.text(`Question ${index + 1}:`, margin, yPosition);
+        yPosition += lineHeight;
+
         // Question text
         if (answer.question?.question_text) {
-          currentY = drawSafeText(currentPage, answer.question.question_text, margin, currentY, {
-            size: 10,
-            font: helvetica,
-            maxWidth: width - 2 * margin,
-          });
-          currentY -= 10;
+          doc.setFontSize(10);
+          doc.setTextColor(0, 0, 0);
+          addWrappedText(answer.question.question_text, margin, yPosition, pageWidth - 2 * margin);
         }
-        
+
         // User's answer
         const userAnswer = answer.question?.answers?.find(a => a.id === answer.selected_answer_id);
         if (userAnswer) {
-          const answerColor = answer.is_correct ? rgb(0, 0.8, 0) : rgb(1, 0, 0);
+          const answerColor = answer.is_correct ? [0, 200, 0] : [255, 0, 0];
           const answerStatus = answer.is_correct ? 'Correct' : 'Wrong';
-          currentY = drawSafeText(currentPage, `${answerStatus} - Your Answer: ${userAnswer.answer_text}`, margin, currentY, {
-            size: 10,
-            font: helvetica,
-            color: answerColor,
-            maxWidth: width - 2 * margin,
-          });
-          currentY -= 5;
+          doc.setTextColor(...answerColor);
+          addWrappedText(`${answerStatus} - Your Answer: ${userAnswer.answer_text}`, margin, yPosition, pageWidth - 2 * margin);
         }
-        
+
         // Correct answer (if user was wrong)
         if (!answer.is_correct) {
           const correctAnswer = answer.question?.answers?.find(a => a.is_correct);
           if (correctAnswer) {
-            currentY = drawSafeText(currentPage, `Correct Answer: ${correctAnswer.answer_text}`, margin, currentY, {
-              size: 10,
-              font: helvetica,
-              color: rgb(0, 0.8, 0),
-              maxWidth: width - 2 * margin,
-            });
-            currentY -= 5;
+            doc.setTextColor(0, 200, 0);
+            addWrappedText(`Correct Answer: ${correctAnswer.answer_text}`, margin, yPosition, pageWidth - 2 * margin);
           }
         }
-        
+
         // Explanation
         if (answer.question?.explanation) {
-          currentY = drawSafeText(currentPage, `Explanation: ${answer.question.explanation}`, margin, currentY, {
-            size: 9,
-            font: helvetica,
-            color: rgb(0.3, 0.3, 0.3),
-            maxWidth: width - 2 * margin,
-          });
-          currentY -= 5;
+          doc.setTextColor(80, 80, 80);
+          doc.setFontSize(9);
+          addWrappedText(`Explanation: ${answer.question.explanation}`, margin, yPosition, pageWidth - 2 * margin);
         }
-        
+
         // Add separator
-        currentPage.drawLine({
-          start: { x: margin, y: currentY },
-          end: { x: width - margin, y: currentY },
-          thickness: 0.5,
-          color: rgb(0.8, 0.8, 0.8),
-        });
-        currentY -= 15;
+        yPosition += lineHeight;
+        checkPageBreak();
+        doc.setDrawColor(200, 200, 200);
+        doc.line(margin, yPosition, pageWidth - margin, yPosition);
+        yPosition += lineHeight;
+
+        // Reset color
+        doc.setTextColor(0, 0, 0);
       });
-      
+
       // Footer on all pages
-      pages.forEach(page => {
+      const pageCount = doc.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(120, 120, 120);
         const footerText = `Generated on: ${new Date().toLocaleString('en-US')} | Algeria Post Exam System`;
-        drawSafeText(page, footerText, margin, 30, {
-          size: 8,
-          color: rgb(0.5, 0.5, 0.5),
-          font: helvetica,
-        });
-      });
+        doc.text(footerText, margin, pageHeight - 10);
+        doc.text(`Page ${i} of ${pageCount}`, pageWidth - margin - 30, pageHeight - 10);
+      }
+
+      // Convert to blob
+      const pdfOutput = doc.output('blob');
+      console.log('PDF generated successfully with jsPDF');
       
-      const pdfBytes = await pdfDoc.save();
-      console.log('PDF generated successfully');
-      
-      return new Blob([pdfBytes], { type: 'application/pdf' });
+      return pdfOutput;
       
     } catch (error) {
       console.error('Error generating PDF report:', error);
