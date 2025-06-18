@@ -20,43 +20,5 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  optimizeDeps: {
-    include: [
-      'pdfmake/build/pdfmake',
-      'pdfmake/build/vfs_fonts',
-      'react-pdf'
-    ],
-    force: true,
-    esbuildOptions: {
-      define: {
-        global: 'globalThis',
-      },
-    }
-  },
-  build: {
-    commonjsOptions: {
-      include: [/pdfmake/, /react-pdf/, /node_modules/],
-      transformMixedEsModules: true,
-    },
-    rollupOptions: {
-      output: {
-        manualChunks: (id) => {
-          if (id.includes('pdfmake')) {
-            return 'pdf-libs';
-          }
-          if (id.includes('react-pdf')) {
-            return 'pdf-libs';
-          }
-          if (id.includes('node_modules')) {
-            return 'vendor';
-          }
-        }
-      }
-    }
-  },
-  define: {
-    global: 'globalThis',
-    'process.env': {},
-  },
   cacheDir: '.vite-new'
 }));

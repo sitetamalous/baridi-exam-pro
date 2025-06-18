@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useStatistics } from "@/hooks/useStatistics";
 import {
@@ -11,16 +12,13 @@ import {
   ResponsiveContainer,
   CartesianGrid,
 } from "recharts";
-import { BadgeCheck, TrendingUp, BarChart3, X as XIcon, Check as CheckIcon, Download, Eye, RotateCcw } from "lucide-react";
+import { BadgeCheck, TrendingUp, BarChart3, X as XIcon, Check as CheckIcon, RotateCcw } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { arDZ } from "date-fns/locale/ar-DZ";
 import classNames from "clsx";
-import { usePDFGenerator } from "@/hooks/usePDFGenerator";
-import PDFViewer from "@/components/PDFViewer";
-import PDFTestComponent from "@/components/PDFTestComponent";
 import { useToast } from "@/hooks/use-toast";
 
 const MotivationMessage: React.FC<{ attempts: any[] }> = ({ attempts }) => {
@@ -42,14 +40,7 @@ const MotivationMessage: React.FC<{ attempts: any[] }> = ({ attempts }) => {
 
 const Statistics: React.FC = () => {
   const { data, isLoading, error } = useStatistics();
-  const { generatePDF, downloadPDF, isGenerating } = usePDFGenerator();
   const { toast } = useToast();
-  
-  // PDF Viewer state
-  const [pdfViewerOpen, setPdfViewerOpen] = useState(false);
-  const [currentPdfBlob, setCurrentPdfBlob] = useState<Blob | null>(null);
-  const [currentExamTitle, setCurrentExamTitle] = useState('');
-  const [currentAttemptId, setCurrentAttemptId] = useState('');
 
   // تجهيز بيانات الرسم البياني
   let chartData: { name: string; النتيجة: number; التاريخ: string }[] = [];
@@ -65,56 +56,8 @@ const Statistics: React.FC = () => {
       .reverse();
   }
 
-  const handleViewPDF = async (attemptId: string, examTitle: string) => {
-    try {
-      const pdfBlob = await generatePDF(attemptId, 'view') as Blob;
-      if (pdfBlob) {
-        setCurrentPdfBlob(pdfBlob);
-        setCurrentExamTitle(examTitle);
-        setCurrentAttemptId(attemptId);
-        setPdfViewerOpen(true);
-        
-        toast({
-          title: "تم إنشاء التقرير",
-          description: "تم إنشاء تقرير PDF بنجاح"
-        });
-      }
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-      toast({
-        variant: "destructive",
-        title: "خطأ في إنشاء التقرير",
-        description: "حدث خطأ أثناء إنشاء تقرير PDF"
-      });
-    }
-  };
-
-  const handleDownloadPDF = async (attemptId: string) => {
-    try {
-      await downloadPDF(attemptId);
-      toast({
-        title: "تم تحميل التقرير",
-        description: "تم تحميل تقرير PDF بنجاح"
-      });
-    } catch (error) {
-      console.error('Error downloading PDF:', error);
-      toast({
-        variant: "destructive",
-        title: "خطأ في تحميل التقرير",
-        description: "حدث خطأ أثناء تحميل تقرير PDF"
-      });
-    }
-  };
-
   const handleRetakeExam = (examId: string) => {
     window.location.href = `/exam/${examId}`;
-  };
-
-  const closePdfViewer = () => {
-    setPdfViewerOpen(false);
-    setCurrentPdfBlob(null);
-    setCurrentExamTitle('');
-    setCurrentAttemptId('');
   };
 
   if (error) {
@@ -146,11 +89,6 @@ const Statistics: React.FC = () => {
       {/* Mobile Header */}
       <div className="sm:hidden pt-4 px-4 mb-2">
         <h1 className="text-xl font-bold text-center text-algeria-green">📊 إحصائياتي</h1>
-      </div>
-
-      {/* PDF Test Component - for development/testing */}
-      <div className="mx-2 mb-4 sm:max-w-4xl sm:mx-auto">
-        <PDFTestComponent />
       </div>
 
       {/* KPI Cards */}
@@ -324,37 +262,15 @@ const Statistics: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Action Buttons */}
+                  {/* Action Button */}
                   <div className="flex gap-2 pt-2 border-t border-gray-100">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="flex-1 text-xs"
-                      onClick={() => handleViewPDF(attempt.id, attempt.exam?.title || 'امتحان')}
-                      disabled={isGenerating}
-                    >
-                      <Eye className="w-4 h-4 ml-1" />
-                      عرض التقرير
-                    </Button>
-                    
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="flex-1 text-xs"
-                      onClick={() => handleDownloadPDF(attempt.id)}
-                      disabled={isGenerating}
-                    >
-                      <Download className="w-4 h-4 ml-1" />
-                      تحميل PDF
-                    </Button>
-                    
                     <Button
                       size="sm"
                       className="flex-1 text-xs bg-algeria-green hover:bg-algeria-green/90"
                       onClick={() => handleRetakeExam(attempt.exam_id)}
                     >
                       <RotateCcw className="w-4 h-4 ml-1" />
-                      إعادة
+                      إعادة الامتحان
                     </Button>
                   </div>
                 </div>
@@ -371,16 +287,6 @@ const Statistics: React.FC = () => {
           )}
         </div>
       </div>
-
-      {/* PDF Viewer Modal */}
-      <PDFViewer
-        isOpen={pdfViewerOpen}
-        onClose={closePdfViewer}
-        pdfBlob={currentPdfBlob}
-        examTitle={currentExamTitle}
-        onDownload={() => handleDownloadPDF(currentAttemptId)}
-        isGenerating={isGenerating}
-      />
 
       <BottomNav />
     </div>
