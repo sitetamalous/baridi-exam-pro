@@ -137,7 +137,7 @@ const AppContent = () => {
       {/* إظهار BottomNav حسب الحاجة */}
       <ConditionalBottomNav />
       
-      {/* Toaster components */}
+      {/* Toaster components - moved inside AppContent for proper React context */}
       <Toaster />
       <Sonner />
     </div>
