@@ -136,10 +136,6 @@ const AppContent = () => {
 
       {/* إظهار BottomNav حسب الحاجة */}
       <ConditionalBottomNav />
-      
-      {/* Move toasters inside the React context */}
-      <Toaster />
-      <Sonner />
     </div>
   );
 };
@@ -150,6 +146,8 @@ const App = () => {
       <AuthProvider>
         <BrowserRouter>
           <AppContent />
+          <Toaster />
+          <Sonner />
         </BrowserRouter>
       </AuthProvider>
     </QueryClientProvider>
