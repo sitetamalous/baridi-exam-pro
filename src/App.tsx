@@ -1,7 +1,5 @@
 
 import React from "react";
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
@@ -138,10 +136,6 @@ const AppContent = () => {
         {/* إظهار BottomNav حسب الحاجة */}
         <ConditionalBottomNav />
       </div>
-      
-      {/* Toast components placed at the end of the main content */}
-      <Toaster />
-      <Sonner />
     </>
   );
 };
