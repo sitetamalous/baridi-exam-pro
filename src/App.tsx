@@ -17,6 +17,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Layout from "./components/Layout";
 import BottomNav from "./components/BottomNav";
 import ExamReviewPage from "./pages/ExamReviewPage";
+import { Toaster } from "@/components/ui/toaster";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -136,6 +137,9 @@ const AppContent = () => {
         {/* إظهار BottomNav حسب الحاجة */}
         <ConditionalBottomNav />
       </div>
+      
+      {/* Add Toaster component for toast notifications */}
+      <Toaster />
     </>
   );
 };
