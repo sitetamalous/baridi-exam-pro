@@ -40,37 +40,12 @@ interface UserProfile {
 }
 
 export class PDFGenerator {
-  private static isInitialized = false;
-
-  private static async initializeFonts() {
-    if (this.isInitialized) return;
-    
-    try {
-      // Use default fonts that support Arabic
-      pdfMake.fonts = {
-        Roboto: {
-          normal: 'Roboto-Regular.ttf',
-          bold: 'Roboto-Medium.ttf',
-          italics: 'Roboto-Italic.ttf',
-          bolditalics: 'Roboto-MediumItalic.ttf'
-        }
-      };
-      this.isInitialized = true;
-      console.log('PDFMake fonts initialized successfully');
-    } catch (error) {
-      console.error('Error initializing fonts:', error);
-      this.isInitialized = true;
-    }
-  }
-
   static async generateExamReport(
     attempt: ExamAttempt,
     answers: UserAnswer[],
     userProfile?: UserProfile
   ): Promise<Blob> {
     console.log('Starting PDF generation with pdfMake...');
-    
-    await this.initializeFonts();
     
     const correctAnswers = answers.filter(a => a.is_correct).length;
     const totalQuestions = answers.length;
@@ -80,9 +55,8 @@ export class PDFGenerator {
       pageSize: 'A4',
       pageMargins: [40, 60, 40, 60],
       defaultStyle: {
-        font: 'Roboto',
-        fontSize: 10,
-        lineHeight: 1.3
+        fontSize: 11,
+        lineHeight: 1.4
       },
       content: [
         // Header
@@ -93,7 +67,7 @@ export class PDFGenerator {
           margin: [0, 0, 0, 20]
         },
         
-        // Exam Title (handle Arabic if present)
+        // Exam Title
         {
           text: attempt.exam?.title || 'امتحان',
           style: 'examTitle',

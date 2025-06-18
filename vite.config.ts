@@ -24,8 +24,7 @@ export default defineConfig(({ mode }) => ({
     include: [
       'pdfmake/build/pdfmake',
       'pdfmake/build/vfs_fonts',
-      'react-pdf',
-      'react-pdf/dist/esm/entry.webpack'
+      'react-pdf'
     ],
     force: true,
     esbuildOptions: {
