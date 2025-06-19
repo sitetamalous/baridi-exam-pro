@@ -22,8 +22,10 @@ const PDFDownloadButton: React.FC<PDFDownloadButtonProps> = ({
   const { downloadPDF, isGenerating } = useArabicPDFGenerator();
 
   const handleDownload = async () => {
+    console.log('بدء تحميل PDF للمحاولة:', attemptId);
     try {
       await downloadPDF(attemptId);
+      console.log('تم تحميل PDF بنجاح');
     } catch (error) {
       console.error('خطأ في تحميل PDF:', error);
     }

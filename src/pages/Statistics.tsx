@@ -40,7 +40,7 @@ const MotivationMessage: React.FC<{ attempts: any[] }> = ({ attempts }) => {
 };
 
 const Statistics: React.FC = () => {
-  const { data, isLoading, error } = useStatistics();
+  const { data, isLoading, error, refetch } = useStatistics();
   const { toast } = useToast();
 
   // تجهيز بيانات الرسم البياني
@@ -58,10 +58,28 @@ const Statistics: React.FC = () => {
   }
 
   const handleRetakeExam = (examId: string) => {
+    console.log('إعادة الامتحان:', examId);
     window.location.href = `/exam/${examId}`;
   };
 
+  const handleReviewExam = (attemptId: string) => {
+    console.log('مراجعة الامتحان:', attemptId);
+    window.location.href = `/results?attempt=${attemptId}`;
+  };
+
+  // إعادة تحديث البيانات عند العودة للصفحة
+  React.useEffect(() => {
+    const handleFocus = () => {
+      console.log('إعادة تحميل الإحصائيات...');
+      refetch();
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [refetch]);
+
   if (error) {
+    console.error('خطأ في تحميل الإحصائيات:', error);
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-4" style={{ direction: "rtl" }}>
         <Card className="p-6 text-center">
@@ -227,64 +245,77 @@ const Statistics: React.FC = () => {
               <div className="animate-pulse text-center text-gray-500">جاري التحميل...</div>
             </Card>
           ) : data?.attempts && data.attempts.length > 0 ? (
-            data.attempts.map((attempt, idx) => (
-              <Card key={attempt.id} className="bg-white/95 shadow-lg border-0 rounded-2xl overflow-hidden">
-                <div className="p-4">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                      <h3 className="font-bold text-gray-900 text-sm">
-                        {attempt.exam?.title || `امتحان رقم ${data.attempts.length - idx}`}
-                      </h3>
-                      <p className="text-gray-500 text-xs mt-1">
-                        {attempt.completed_at
-                          ? format(new Date(attempt.completed_at), "d MMM yyyy - HH:mm", { locale: arDZ })
-                          : ""}
-                      </p>
-                    </div>
-                    
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={classNames(
-                          "font-bold text-lg",
-                          attempt.percentage >= 50
-                            ? "text-algeria-green"
-                            : "text-red-500"
+            data.attempts.map((attempt, idx) => {
+              console.log('عرض المحاولة:', attempt);
+              return (
+                <Card key={attempt.id} className="bg-white/95 shadow-lg border-0 rounded-2xl overflow-hidden">
+                  <div className="p-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <h3 className="font-bold text-gray-900 text-sm">
+                          {attempt.exam?.title || `امتحان رقم ${data.attempts.length - idx}`}
+                        </h3>
+                        <p className="text-gray-500 text-xs mt-1">
+                          {attempt.completed_at
+                            ? format(new Date(attempt.completed_at), "d MMM yyyy - HH:mm", { locale: arDZ })
+                            : ""}
+                        </p>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={classNames(
+                            "font-bold text-lg",
+                            attempt.percentage >= 50
+                              ? "text-algeria-green"
+                              : "text-red-500"
+                          )}
+                        >
+                          {attempt.percentage !== null && attempt.percentage !== undefined
+                            ? `${Math.round(attempt.percentage)}%`
+                            : "--"}
+                        </span>
+                        {attempt.percentage >= 50 ? (
+                          <CheckIcon className="text-green-500 w-5 h-5" />
+                        ) : (
+                          <XIcon className="text-red-500 w-5 h-5" />
                         )}
+                      </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex gap-2 pt-2 border-t border-gray-100">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1 text-xs"
+                        onClick={() => handleReviewExam(attempt.id)}
                       >
-                        {attempt.percentage !== null && attempt.percentage !== undefined
-                          ? `${Math.round(attempt.percentage)}%`
-                          : "--"}
-                      </span>
-                      {attempt.percentage >= 50 ? (
-                        <CheckIcon className="text-green-500 w-5 h-5" />
-                      ) : (
-                        <XIcon className="text-red-500 w-5 h-5" />
-                      )}
+                        <FileText className="w-4 h-4 ml-1" />
+                        مراجعة الامتحان
+                      </Button>
+                      
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1 text-xs"
+                        onClick={() => handleRetakeExam(attempt.exam_id)}
+                      >
+                        <RotateCcw className="w-4 h-4 ml-1" />
+                        إعادة الامتحان
+                      </Button>
+                      
+                      <PDFDownloadButton
+                        attemptId={attempt.id}
+                        examTitle={attempt.exam?.title}
+                        size="sm"
+                        className="flex-1"
+                      />
                     </div>
                   </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex gap-2 pt-2 border-t border-gray-100">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="flex-1 text-xs"
-                      onClick={() => handleRetakeExam(attempt.exam_id)}
-                    >
-                      <RotateCcw className="w-4 h-4 ml-1" />
-                      إعادة الامتحان
-                    </Button>
-                    
-                    <PDFDownloadButton
-                      attemptId={attempt.id}
-                      examTitle={attempt.exam?.title}
-                      size="sm"
-                      className="flex-1"
-                    />
-                  </div>
-                </div>
-              </Card>
-            ))
+                </Card>
+              )
+            })
           ) : (
             <Card className="rounded-2xl p-8 bg-white/80 text-center">
               <div className="text-gray-500">

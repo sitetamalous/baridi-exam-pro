@@ -11,17 +11,24 @@ export const useStatistics = () => {
     queryKey: ["statistics", userId],
     enabled: !!userId,
     queryFn: async () => {
+      console.log('جلب الإحصائيات للمستخدم:', userId);
+      
       // جلب كل المحاولات المنتهية لهذا المستخدم مع ربطها بحق الامتحان
       const { data: attempts, error } = await supabase
         .from("user_attempts")
         .select(
-          "id,score,percentage,completed_at,exam_id,exam:exams(title)"
+          "id,score,percentage,completed_at,started_at,exam_id,exam:exams(id,title,description)"
         )
         .eq("user_id", userId)
         .not("completed_at", "is", null)
         .order("completed_at", { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('خطأ في جلب المحاولات:', error);
+        throw error;
+      }
+
+      console.log('المحاولات المجلبة:', attempts);
 
       const examsTaken = attempts ? attempts.length : 0;
       let bestPercentage = 0;
@@ -55,4 +62,3 @@ export const useStatistics = () => {
     },
   });
 };
-
