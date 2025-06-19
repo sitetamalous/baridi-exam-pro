@@ -78,6 +78,16 @@ const Statistics: React.FC = () => {
     return () => window.removeEventListener('focus', handleFocus);
   }, [refetch]);
 
+  // إعادة تحميل البيانات كل 30 ثانية
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      console.log('تحديث تلقائي للإحصائيات...');
+      refetch();
+    }, 30000);
+    
+    return () => clearInterval(interval);
+  }, [refetch]);
+
   if (error) {
     console.error('خطأ في تحميل الإحصائيات:', error);
     return (
@@ -110,6 +120,20 @@ const Statistics: React.FC = () => {
         <h1 className="text-xl font-bold text-center text-algeria-green">📊 إحصائياتي</h1>
       </div>
 
+      {/* تحديث تلقائي */}
+      <div className="text-center text-xs text-gray-500 mb-2">
+        آخر تحديث: {new Date().toLocaleTimeString('ar-DZ')}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => refetch()}
+          className="ml-2 text-xs"
+          disabled={isLoading}
+        >
+          {isLoading ? "جاري التحديث..." : "تحديث الآن"}
+        </Button>
+      </div>
+
       {/* KPI Cards */}
       <div className="grid grid-cols-1 xs:grid-cols-3 gap-3 mt-4 px-2 sm:max-w-4xl sm:mx-auto sm:px-6">
         <Card className="bg-white/90 shadow-lg rounded-2xl border-0 overflow-hidden">
@@ -121,7 +145,7 @@ const Statistics: React.FC = () => {
               <div className="text-2xl font-bold text-gray-800">
                 {isLoading ? "..." : data?.examsTaken ?? 0}
               </div>
-              <div className="text-xs text-gray-600 font-medium">اختبارات منجزة</div>
+              <div className="text-xs text-gray-600 font-medium">اختبارات مكتملة</div>
             </div>
           </div>
         </Card>
@@ -224,7 +248,7 @@ const Statistics: React.FC = () => {
             </div>
           ) : (
             <div className="text-center text-gray-500 py-12">
-              📊 لا توجد بيانات بعد
+              📊 لا توجد امتحانات مكتملة بعد
             </div>
           )}
         </div>
@@ -236,7 +260,7 @@ const Statistics: React.FC = () => {
       {/* Exam History */}
       <div className="mt-6 mx-2 mb-24 sm:max-w-4xl sm:mx-auto">
         <h2 className="font-bold text-gray-800 mb-4 text-lg px-2">
-          📋 تاريخ الامتحانات
+          📋 تاريخ الامتحانات المكتملة ({data?.examsTaken || 0})
         </h2>
         
         <div className="space-y-3">
@@ -246,7 +270,7 @@ const Statistics: React.FC = () => {
             </Card>
           ) : data?.attempts && data.attempts.length > 0 ? (
             data.attempts.map((attempt, idx) => {
-              console.log('عرض المحاولة:', attempt);
+              console.log('عرض المحاولة المكتملة:', attempt);
               return (
                 <Card key={attempt.id} className="bg-white/95 shadow-lg border-0 rounded-2xl overflow-hidden">
                   <div className="p-4">
@@ -256,9 +280,14 @@ const Statistics: React.FC = () => {
                           {attempt.exam?.title || `امتحان رقم ${data.attempts.length - idx}`}
                         </h3>
                         <p className="text-gray-500 text-xs mt-1">
-                          {attempt.completed_at
+                          مكتمل في: {attempt.completed_at
                             ? format(new Date(attempt.completed_at), "d MMM yyyy - HH:mm", { locale: arDZ })
-                            : ""}
+                            : "غير محدد"}
+                        </p>
+                        <p className="text-gray-400 text-xs">
+                          بدأ في: {attempt.started_at
+                            ? format(new Date(attempt.started_at), "d MMM yyyy - HH:mm", { locale: arDZ })
+                            : "غير محدد"}
                         </p>
                       </div>
                       
@@ -320,8 +349,14 @@ const Statistics: React.FC = () => {
             <Card className="rounded-2xl p-8 bg-white/80 text-center">
               <div className="text-gray-500">
                 <BarChart3 className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                <p>لا توجد امتحانات سابقة لعرضها.</p>
-                <p className="text-sm mt-2">ابدأ أول امتحان لك الآن!</p>
+                <p>لا توجد امتحانات مكتملة لعرضها.</p>
+                <p className="text-sm mt-2">ابدأ أول امتحان لك وأكمله لرؤية النتائج هنا!</p>
+                <Button 
+                  className="mt-4" 
+                  onClick={() => window.location.href = '/exams'}
+                >
+                  ابدأ امتحان جديد
+                </Button>
               </div>
             </Card>
           )}

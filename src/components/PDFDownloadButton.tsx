@@ -1,8 +1,8 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Download, FileText } from 'lucide-react';
-import { useArabicPDFGenerator } from '@/hooks/useArabicPDFGenerator';
+import { Download } from 'lucide-react';
+import { usePDFGenerator } from '@/hooks/usePDFGenerator';
 
 interface PDFDownloadButtonProps {
   attemptId: string;
@@ -19,7 +19,7 @@ const PDFDownloadButton: React.FC<PDFDownloadButtonProps> = ({
   size = 'sm',
   className = ''
 }) => {
-  const { downloadPDF, isGenerating } = useArabicPDFGenerator();
+  const { downloadPDF, isGenerating } = usePDFGenerator();
 
   const handleDownload = async () => {
     console.log('بدء تحميل PDF للمحاولة:', attemptId);
