@@ -1,8 +1,7 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { PDFGenerator } from '@/services/pdfGenerator';
+import { ArabicPdfGenerator } from '@/services/arabicPdfGenerator';
 
 interface ExamAttempt {
   id: string;
@@ -134,7 +133,7 @@ export const usePDFGenerator = () => {
       }
 
       // Generate PDF with real data including explanations and corrections
-      const pdfBlob = await PDFGenerator.generateExamReport(
+      const pdfBlob = await ArabicPdfGenerator.generateExamReport(
         attempt as ExamAttempt,
         answers as UserAnswer[],
         userProfile
@@ -148,7 +147,7 @@ export const usePDFGenerator = () => {
         const examTitle = attempt.exam?.title || 'امتحان';
         const date = new Date().toISOString().split('T')[0];
         const filename = `تقرير-${examTitle}-${date}.pdf`;
-        await PDFGenerator.downloadPDF(pdfBlob, filename);
+        ArabicPdfGenerator.downloadPDF(pdfBlob, filename);
         return null;
       }
     } catch (error) {

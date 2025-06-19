@@ -1,7 +1,8 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { PDFGenerator } from '@/services/pdfGenerator';
+import { ArabicPdfGenerator } from '@/services/arabicPdfGenerator';
 import PDFViewer from '@/components/PDFViewer';
 import { FileText, Download, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -85,7 +86,7 @@ const PDFTestComponent: React.FC = () => {
   const handleGenerateTestPDF = async () => {
     setIsGenerating(true);
     try {
-      const blob = await PDFGenerator.generateExamReport(
+      const blob = await ArabicPdfGenerator.generateExamReport(
         sampleAttempt,
         sampleAnswers,
         sampleUserProfile
@@ -115,7 +116,7 @@ const PDFTestComponent: React.FC = () => {
 
   const handleDownloadPDF = () => {
     if (pdfBlob) {
-      PDFGenerator.downloadPDF(pdfBlob, 'تقرير-اختبار-تجريبي.pdf');
+      ArabicPdfGenerator.downloadPDF(pdfBlob, 'تقرير-اختبار-تجريبي.pdf');
       toast({
         title: "تم التحميل",
         description: "تم تحميل ملف PDF بنجاح"
