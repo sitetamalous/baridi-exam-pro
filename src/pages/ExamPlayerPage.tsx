@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import ExamTimer from "@/components/ExamTimer";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight, X } from "lucide-react";
+import { useExamSubmission } from "@/hooks/useExamSubmission";
 
 // دائرة رقم السؤال مع إبراز السؤال الجاري
 const QuestionNumberCircle: React.FC<{
@@ -38,6 +39,8 @@ const QuestionNumberCircle: React.FC<{
 const ExamPlayerPage: React.FC = () => {
   const { examId } = useParams();
   const navigate = useNavigate();
+  const { submitExam, isSubmitting } = useExamSubmission();
+  
   const [exam, setExam] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [current, setCurrent] = useState(0);
@@ -77,8 +80,24 @@ const ExamPlayerPage: React.FC = () => {
   const handlePrev = () => setCurrent((i) => Math.max(i - 1, 0));
   const goToQuestion = (index) => setCurrent(index);
 
-  const handleSubmit = () => {
-    navigate(`/exam/${examId}/review`, { state: { answers } });
+  const handleSubmit = async () => {
+    if (!examId) return;
+
+    console.log('تسليم الامتحان مع الإجابات:', answers);
+    
+    const result = await submitExam(examId, answers);
+    
+    if (result) {
+      // الانتقال لصفحة المراجعة مع معرف المحاولة
+      navigate(`/results?attempt=${result.attemptId}`, {
+        state: { 
+          answers,
+          score: result.score,
+          percentage: result.percentage,
+          totalQuestions: result.totalQuestions
+        }
+      });
+    }
   };
 
   // زر الخروج من الامتحان: العودة للصفحة السابقة أو داشبورد
@@ -226,13 +245,15 @@ const ExamPlayerPage: React.FC = () => {
             <ArrowRight size={20} className="ml-1" />
             السابق
           </Button>
+          
           {current === questions.length - 1 ? (
             <Button
               size="lg"
               className="flex-1 rounded-xl bg-algeria-green text-white font-bold text-base shadow-md"
               onClick={handleSubmit}
+              disabled={isSubmitting}
             >
-              إرسال الامتحان
+              {isSubmitting ? "جاري التسليم..." : "إرسال الامتحان"}
             </Button>
           ) : (
             <Button

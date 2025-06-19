@@ -1,314 +1,229 @@
 
-import React, { useState, useEffect } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
-import { CheckCircle, XCircle, BarChart3, Calendar, Clock, Trophy } from 'lucide-react';
+import React, { useEffect, useState } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import ExamQuestion from "@/components/ExamQuestion";
+import PDFDownloadButton from "@/components/PDFDownloadButton";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { CheckCircle, XCircle, RotateCcw, Home } from "lucide-react";
+import BottomNav from "@/components/BottomNav";
 
 const Results: React.FC = () => {
-  const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
-  
-  const [attempts, setAttempts] = useState<any[]>([]);
-  const [selectedAttempt, setSelectedAttempt] = useState<any>(null);
-  const [attemptDetails, setAttemptDetails] = useState<any>(null);
+  const [searchParams] = useSearchParams();
+  const attemptId = searchParams.get('attempt');
+
+  const [attempt, setAttempt] = useState<any>(null);
+  const [questions, setQuestions] = useState<any[]>([]);
+  const [userAnswers, setUserAnswers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (user) {
-      fetchAttempts();
-      const attemptId = searchParams.get('attempt');
-      if (attemptId) {
-        fetchAttemptDetails(attemptId);
+    if (!attemptId || !user) return;
+
+    const fetchResults = async () => {
+      console.log('جلب نتائج المحاولة:', attemptId);
+      
+      try {
+        // جلب بيانات المحاولة
+        const { data: attemptData, error: attemptError } = await supabase
+          .from('user_attempts')
+          .select(`
+            id,
+            score,
+            percentage,
+            completed_at,
+            started_at,
+            exam:exams(id, title, description)
+          `)
+          .eq('id', attemptId)
+          .eq('user_id', user.id)
+          .single();
+
+        if (attemptError) {
+          console.error('خطأ في جلب المحاولة:', attemptError);
+          setError('لم يتم العثور على نتائج هذا الامتحان');
+          return;
+        }
+
+        console.log('تم جلب المحاولة:', attemptData);
+        setAttempt(attemptData);
+
+        // جلب إجابات المستخدم مع الأسئلة
+        const { data: answersData, error: answersError } = await supabase
+          .from('user_answers')
+          .select(`
+            id,
+            question_id,
+            selected_answer_id,
+            is_correct,
+            question:questions(
+              question_text,
+              explanation,
+              answers(
+                id,
+                answer_text,
+                is_correct
+              )
+            )
+          `)
+          .eq('attempt_id', attemptId)
+          .order('question_id');
+
+        if (answersError) {
+          console.error('خطأ في جلب الإجابات:', answersError);
+          setError('فشل في جلب تفاصيل الإجابات');
+          return;
+        }
+
+        console.log('تم جلب الإجابات:', answersData);
+        setUserAnswers(answersData || []);
+
+        // تحضير الأسئلة للعرض
+        const questionsData = (answersData || []).map((answer: any, index: number) => ({
+          ...answer.question,
+          userAnswer: answer.selected_answer_id,
+          isCorrect: answer.is_correct,
+          index: index + 1
+        }));
+
+        setQuestions(questionsData);
+
+      } catch (error: any) {
+        console.error('خطأ في جلب النتائج:', error);
+        setError('حدث خطأ في تحميل النتائج');
+      } finally {
+        setLoading(false);
       }
-    }
-  }, [user, searchParams]);
+    };
 
-  const fetchAttempts = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('user_attempts')
-        .select(`
-          *,
-          exams (
-            title,
-            description
-          )
-        `)
-        .eq('user_id', user?.id)
-        .order('started_at', { ascending: false });
-
-      if (error) throw error;
-      setAttempts(data || []);
-    } catch (error: any) {
-      console.error('Error fetching attempts:', error);
-      toast({
-        variant: "destructive",
-        title: "خطأ في جلب النتائج",
-        description: "حدث خطأ أثناء جلب نتائج الامتحانات",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchAttemptDetails = async (attemptId: string) => {
-    try {
-      const { data: attemptData, error: attemptError } = await supabase
-        .from('user_attempts')
-        .select(`
-          *,
-          exams (
-            title,
-            description
-          )
-        `)
-        .eq('id', attemptId)
-        .single();
-
-      if (attemptError) throw attemptError;
-
-      const { data: answersData, error: answersError } = await supabase
-        .from('user_answers')
-        .select(`
-          *,
-          questions (
-            question_text,
-            explanation
-          ),
-          answers!selected_answer_id (
-            answer_text
-          )
-        `)
-        .eq('attempt_id', attemptId);
-
-      if (answersError) throw answersError;
-
-      // Get correct answers for each question
-      const questionIds = answersData?.map(a => a.question_id) || [];
-      const { data: correctAnswers, error: correctError } = await supabase
-        .from('answers')
-        .select('*')
-        .in('question_id', questionIds)
-        .eq('is_correct', true);
-
-      if (correctError) throw correctError;
-
-      setSelectedAttempt(attemptData);
-      setAttemptDetails({
-        answers: answersData,
-        correctAnswers: correctAnswers
-      });
-    } catch (error: any) {
-      console.error('Error fetching attempt details:', error);
-      toast({
-        variant: "destructive",
-        title: "خطأ في جلب تفاصيل الامتحان",
-        description: "حدث خطأ أثناء جلب تفاصيل النتيجة",
-      });
-    }
-  };
+    fetchResults();
+  }, [attemptId, user]);
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-algeria-green"></div>
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-algeria-green mx-auto mb-4"></div>
+          <p className="text-gray-600">جاري تحميل النتائج...</p>
+        </div>
       </div>
     );
   }
 
-  if (selectedAttempt && attemptDetails) {
+  if (error || !attempt) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="mb-6">
-          <Button
-            variant="outline"
-            onClick={() => {
-              setSelectedAttempt(null);
-              setAttemptDetails(null);
-              navigate('/results');
-            }}
-            className="mb-4"
-          >
-            العودة للنتائج
-          </Button>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <span>{selectedAttempt.exams?.title}</span>
-                <div className="flex items-center space-x-4 space-x-reverse">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-algeria-green">
-                      {selectedAttempt.percentage?.toFixed(1)}%
-                    </div>
-                    <div className="text-sm text-gray-600">النسبة</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold">
-                      {selectedAttempt.score}/{attemptDetails.answers?.length}
-                    </div>
-                    <div className="text-sm text-gray-600">النقاط</div>
-                  </div>
-                </div>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div className="flex items-center">
-                  <Calendar className="h-4 w-4 ml-2" />
-                  تاريخ الامتحان: {new Date(selectedAttempt.started_at).toLocaleDateString('ar-DZ')}
-                </div>
-                <div className="flex items-center">
-                  <Clock className="h-4 w-4 ml-2" />
-                  وقت الإنهاء: {new Date(selectedAttempt.completed_at).toLocaleTimeString('ar-DZ')}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Questions Review */}
-        <div className="space-y-4">
-          {attemptDetails.answers?.map((userAnswer: any, index: number) => {
-            const correctAnswer = attemptDetails.correctAnswers?.find(
-              (ca: any) => ca.question_id === userAnswer.question_id
-            );
-            
-            return (
-              <Card key={userAnswer.id} className="border-l-4 border-l-gray-300">
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <h3 className="font-medium leading-relaxed flex-1">
-                      <span className="text-algeria-green font-bold ml-2">
-                        السؤال {index + 1}:
-                      </span>
-                      {userAnswer.questions?.question_text}
-                    </h3>
-                    <div className="flex items-center ml-4">
-                      {userAnswer.is_correct ? (
-                        <CheckCircle className="h-6 w-6 text-green-500" />
-                      ) : (
-                        <XCircle className="h-6 w-6 text-red-500" />
-                      )}
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {userAnswer.selected_answer_id && (
-                    <div className={`p-3 rounded-lg ${
-                      userAnswer.is_correct ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'
-                    }`}>
-                      <span className="font-medium">إجابتك: </span>
-                      <span>{userAnswer.answers?.answer_text}</span>
-                    </div>
-                  )}
-                  
-                  {!userAnswer.is_correct && correctAnswer && (
-                    <div className="p-3 rounded-lg bg-green-50 border border-green-200">
-                      <span className="font-medium text-green-700">الإجابة الصحيحة: </span>
-                      <span>{correctAnswer.answer_text}</span>
-                    </div>
-                  )}
-                  
-                  {userAnswer.questions?.explanation && (
-                    <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
-                      <span className="font-medium text-blue-700">التفسير: </span>
-                      <span>{userAnswer.questions.explanation}</span>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-4">
+        <Card className="p-6 text-center max-w-md">
+          <XCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-gray-800 mb-2">خطأ في تحميل النتائج</h2>
+          <p className="text-gray-600 mb-4">{error || 'لم يتم العثور على نتائج هذا الامتحان'}</p>
+          <div className="flex gap-2">
+            <Button onClick={() => navigate('/statistics')} className="flex-1">
+              <Home className="w-4 h-4 mr-2" />
+              الإحصائيات
+            </Button>
+            <Button variant="outline" onClick={() => navigate('/exams')} className="flex-1">
+              الامتحانات
+            </Button>
+          </div>
+        </Card>
       </div>
     );
   }
+
+  const percentage = Math.round(attempt.percentage || 0);
+  const isPassed = percentage >= 50;
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold mb-2 flex items-center">
-          <BarChart3 className="h-6 w-6 ml-3" />
-          نتائج الامتحانات
-        </h1>
-        <p className="text-gray-600">اعرض نتائج امتحاناتك السابقة وراجع إجاباتك</p>
+    <div 
+      className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex flex-col pb-20"
+      style={{ direction: "rtl" }}
+    >
+      {/* Header */}
+      <div className="p-4 mb-4">
+        <div className="flex items-center gap-2 mb-4">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => navigate('/statistics')}
+          >
+            العودة للإحصائيات
+          </Button>
+          <h1 className="flex-1 text-center font-bold text-algeria-green">
+            {attempt.exam?.title || 'نتائج الامتحان'}
+          </h1>
+        </div>
       </div>
 
-      {attempts.length === 0 ? (
-        <Card>
-          <CardContent className="text-center py-8">
-            <Trophy className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600 mb-4">لم تقم بأي امتحان بعد</p>
-            <Button onClick={() => navigate('/dashboard')}>
-              ابدأ امتحانك الأول
-            </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid gap-4">
-          {attempts.map((attempt) => (
-            <Card key={attempt.id} className="hover:shadow-md transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-lg mb-2">
-                      {attempt.exams?.title}
-                    </h3>
-                    <p className="text-gray-600 mb-3">
-                      {attempt.exams?.description}
-                    </p>
-                    <div className="flex items-center space-x-4 space-x-reverse text-sm text-gray-500">
-                      <div className="flex items-center">
-                        <Calendar className="h-4 w-4 ml-1" />
-                        {new Date(attempt.started_at).toLocaleDateString('ar-DZ')}
-                      </div>
-                      {attempt.completed_at && (
-                        <div className="flex items-center">
-                          <Clock className="h-4 w-4 ml-1" />
-                          {new Date(attempt.completed_at).toLocaleTimeString('ar-DZ')}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="text-left mr-4">
-                    {attempt.completed_at ? (
-                      <>
-                        <div className="text-2xl font-bold text-algeria-green">
-                          {attempt.percentage?.toFixed(1)}%
-                        </div>
-                        <div className="text-sm text-gray-600">
-                          {attempt.score} نقطة
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => fetchAttemptDetails(attempt.id)}
-                          className="mt-2"
-                        >
-                          عرض التفاصيل
-                        </Button>
-                      </>
-                    ) : (
-                      <div className="text-orange-600 font-medium">
-                        غير مكتمل
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+      {/* Results Summary */}
+      <Card className="mx-4 mb-6 p-6 text-center bg-white/90">
+        <div className="flex items-center justify-center mb-4">
+          {isPassed ? (
+            <CheckCircle className="w-16 h-16 text-green-500" />
+          ) : (
+            <XCircle className="w-16 h-16 text-red-500" />
+          )}
         </div>
-      )}
+        
+        <h2 className={`text-3xl font-bold mb-2 ${isPassed ? 'text-green-600' : 'text-red-600'}`}>
+          {percentage}%
+        </h2>
+        
+        <p className="text-lg text-gray-700 mb-2">
+          {attempt.score} من {questions.length} إجابة صحيحة
+        </p>
+        
+        <p className={`font-medium ${isPassed ? 'text-green-600' : 'text-red-600'}`}>
+          {isPassed ? '🎉 مبروك! لقد نجحت' : '😔 لم تنجح هذه المرة'}
+        </p>
+
+        {/* Action Buttons */}
+        <div className="flex gap-2 mt-6">
+          <Button
+            variant="outline"
+            className="flex-1"
+            onClick={() => navigate(`/exam/${attempt.exam?.id}`)}
+          >
+            <RotateCcw className="w-4 h-4 mr-2" />
+            إعادة الامتحان
+          </Button>
+          
+          <PDFDownloadButton
+            attemptId={attemptId!}
+            examTitle={attempt.exam?.title}
+            className="flex-1"
+          />
+        </div>
+      </Card>
+
+      {/* Questions Review */}
+      <div className="px-4 space-y-4 mb-6">
+        <h3 className="text-lg font-bold text-gray-800 mb-4">مراجعة الأسئلة</h3>
+        
+        {questions.map((question, idx) => (
+          <Card key={question.id} className="p-4 bg-white/90">
+            <div className="text-sm text-algeria-green font-bold mb-2">
+              السؤال {idx + 1}
+            </div>
+            <ExamQuestion
+              questionText={question.question_text}
+              answers={question.answers}
+              selected={question.userAnswer}
+              correctAnswerId={question.answers.find((a: any) => a.is_correct)?.id}
+              showResult={true}
+              explanation={question.explanation}
+              onSelect={() => {}}
+            />
+          </Card>
+        ))}
+      </div>
+
+      <BottomNav />
     </div>
   );
 };
