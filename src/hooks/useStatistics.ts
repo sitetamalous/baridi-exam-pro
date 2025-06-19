@@ -11,7 +11,7 @@ export const useStatistics = () => {
     queryKey: ["statistics", userId],
     enabled: !!userId,
     staleTime: 0, // البيانات دائماً stale لضمان التحديث
-    cacheTime: 0, // لا نحتفظ بالكاش
+    gcTime: 0, // لا نحتفظ بالكاش
     queryFn: async () => {
       console.log('جلب الإحصائيات للمستخدم:', userId);
       
