@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { ArabicPdfGenerator } from '@/services/arabicPdfGenerator';
+import { ArabicPdfGeneratorFixed } from '@/services/arabicPdfGeneratorFixed';
 import { useToast } from '@/hooks/use-toast';
 
 interface ExamAttempt {
@@ -123,7 +123,7 @@ export const useArabicPDFGenerator = () => {
   const generatePDF = async (attemptId: string, action: 'view' | 'download' = 'download') => {
     setIsGenerating(true);
     try {
-      console.log('إنشاء PDF للمحاولة:', attemptId);
+      console.log('إنشاء PDF للمحاولة باستخدام HTML to Canvas:', attemptId);
       
       const { attempt, answers, userProfile } = await fetchAttemptDetails(attemptId);
       
@@ -135,8 +135,8 @@ export const useArabicPDFGenerator = () => {
         throw new Error('لم يتم العثور على إجابات الامتحان');
       }
 
-      // إنشاء PDF بالبيانات الحقيقية
-      const pdfBlob = await ArabicPdfGenerator.generateExamReport(
+      // إنشاء PDF بالبيانات الحقيقية باستخدام المولد الجديد
+      const pdfBlob = await ArabicPdfGeneratorFixed.generateExamReport(
         attempt as ExamAttempt,
         answers as UserAnswer[],
         userProfile
@@ -147,11 +147,11 @@ export const useArabicPDFGenerator = () => {
         const examTitle = attempt.exam?.title || 'امتحان';
         const date = new Date().toISOString().split('T')[0];
         const filename = `تقرير-${examTitle}-${date}.pdf`;
-        ArabicPdfGenerator.downloadPDF(pdfBlob, filename);
+        ArabicPdfGeneratorFixed.downloadPDF(pdfBlob, filename);
         
         toast({
           title: "تم التحميل بنجاح",
-          description: "تم تحميل تقرير PDF بنجاح"
+          description: "تم تحميل تقرير PDF بنجاح مع دعم كامل للعربية"
         });
       }
 
