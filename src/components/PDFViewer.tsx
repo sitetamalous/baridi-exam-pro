@@ -5,8 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Download, ZoomIn, ZoomOut, RotateCw, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
-// Set up PDF.js worker using CDN
-pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
+// Set up PDF.js worker with proper Vite configuration
+pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/build/pdf.worker.min.js',
+  import.meta.url
+).toString();
 
 interface PDFViewerProps {
   isOpen: boolean;
@@ -31,11 +34,13 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
   const [rotation, setRotation] = useState<number>(0);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
   const { toast } = useToast();
 
   useEffect(() => {
     if (pdfBlob && isOpen) {
       try {
+        setLoading(true);
         const url = URL.createObjectURL(pdfBlob);
         setPdfUrl(url);
         setPageNumber(1);
@@ -48,25 +53,29 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
         };
       } catch (err) {
         console.error('Error creating PDF URL:', err);
-        setError('Failed to create PDF URL');
+        setError('فشل في إنشاء رابط PDF');
+        setLoading(false);
       }
     } else {
       setPdfUrl(null);
+      setLoading(false);
     }
   }, [pdfBlob, isOpen]);
 
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
     setNumPages(numPages);
     setError(null);
+    setLoading(false);
   };
 
   const onDocumentLoadError = (error: Error) => {
     console.error('PDF loading error:', error);
-    setError('Failed to load PDF file');
+    setError('فشل في تحميل ملف PDF');
+    setLoading(false);
     toast({
       variant: "destructive",
-      title: "PDF Loading Error",
-      description: "Failed to load PDF file"
+      title: "خطأ في تحميل PDF",
+      description: "فشل في تحميل ملف PDF"
     });
   };
 
@@ -104,8 +113,8 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
       URL.revokeObjectURL(url);
       
       toast({
-        title: "Downloaded",
-        description: "PDF file downloaded successfully"
+        title: "تم التحميل",
+        description: "تم تحميل ملف PDF بنجاح"
       });
     }
   };
@@ -118,7 +127,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
         <DialogHeader className="p-4 border-b bg-white">
           <div className="flex items-center justify-between">
             <DialogTitle className="text-lg font-bold text-right flex-1">
-              {examTitle} - PDF Report
+              {examTitle} - تقرير PDF
             </DialogTitle>
             <Button
               variant="ghost"
@@ -136,7 +145,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setScale(prev => Math.max(prev - 0.2, 0.5))}
+                onClick={handleZoomOut}
                 disabled={scale <= 0.5}
               >
                 <ZoomOut className="h-4 w-4" />
@@ -147,7 +156,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setScale(prev => Math.min(prev + 0.2, 3.0))}
+                onClick={handleZoomIn}
                 disabled={scale >= 3.0}
               >
                 <ZoomIn className="h-4 w-4" />
@@ -155,7 +164,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setRotation(prev => (prev + 90) % 360)}
+                onClick={handleRotate}
               >
                 <RotateCw className="h-4 w-4" />
               </Button>
@@ -166,18 +175,18 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setPageNumber(prev => Math.max(prev - 1, 1))}
+                  onClick={handlePrevPage}
                   disabled={pageNumber <= 1}
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
                 <span className="text-sm font-medium min-w-[80px] text-center">
-                  {pageNumber} of {numPages}
+                  {pageNumber} من {numPages}
                 </span>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setPageNumber(prev => Math.min(prev + 1, numPages))}
+                  onClick={handleNextPage}
                   disabled={pageNumber >= numPages}
                 >
                   <ChevronRight className="h-4 w-4" />
@@ -186,13 +195,13 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
             )}
 
             <Button
-              onClick={onDownload}
+              onClick={handleDownload}
               disabled={isGenerating || !pdfBlob}
               className="bg-algeria-green hover:bg-algeria-green/90"
               size="sm"
             >
               <Download className="h-4 w-4 ml-1" />
-              Download PDF
+              تحميل PDF
             </Button>
           </div>
         </DialogHeader>
@@ -203,7 +212,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
                 <div className="text-red-500 text-lg font-semibold mb-2">
-                  PDF Loading Error
+                  خطأ في تحميل PDF
                 </div>
                 <div className="text-gray-600 text-sm">
                   {error}
@@ -213,15 +222,15 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
                   className="mt-4"
                   variant="outline"
                 >
-                  Retry
+                  إعادة المحاولة
                 </Button>
               </div>
             </div>
-          ) : !pdfUrl ? (
+          ) : loading || !pdfUrl ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-algeria-green mx-auto mb-4"></div>
-                <div className="text-gray-600">Preparing PDF...</div>
+                <div className="text-gray-600">جاري تحضير PDF...</div>
               </div>
             </div>
           ) : (
@@ -237,7 +246,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
                 }
                 error={
                   <div className="flex items-center justify-center h-64">
-                    <div className="text-red-500">Failed to load PDF</div>
+                    <div className="text-red-500">فشل في تحميل PDF</div>
                   </div>
                 }
               >
@@ -252,7 +261,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
                   }
                   error={
                     <div className="flex items-center justify-center h-64">
-                      <div className="text-red-500">Failed to load page</div>
+                      <div className="text-red-500">فشل في تحميل الصفحة</div>
                     </div>
                   }
                   className="shadow-lg"

@@ -1,4 +1,3 @@
-
 import jsPDF from 'jspdf';
 import { format } from 'date-fns';
 import { arDZ } from 'date-fns/locale/ar-DZ';
@@ -45,14 +44,28 @@ export class ArabicPdfGenerator {
       format: 'a4'
     });
 
-    // Set RTL direction and UTF-8 encoding
+    // Set font to support Unicode
     pdf.setFont('helvetica');
     pdf.setFontSize(12);
     
     return pdf;
   }
 
-  private static addArabicText(
+  private static reverseArabicText(text: string): string {
+    // Simple Arabic text reversal for RTL display
+    // This is a basic implementation - for production, use a proper Arabic shaping library
+    const arabicRegex = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
+    
+    if (arabicRegex.test(text)) {
+      // Split by spaces and reverse word order for RTL
+      const words = text.split(' ');
+      return words.reverse().join(' ');
+    }
+    
+    return text;
+  }
+
+  private static addText(
     pdf: jsPDF, 
     text: string, 
     x: number, 
@@ -74,8 +87,18 @@ export class ArabicPdfGenerator {
       pdf.setFont('helvetica', 'normal');
     }
 
-    // For Arabic text, we need to reverse the text direction for proper display
-    const lines = pdf.splitTextToSize(text, maxWidth);
+    // Process Arabic text
+    const processedText = this.reverseArabicText(text);
+    
+    // Replace Unicode symbols with ASCII equivalents
+    const cleanText = processedText
+      .replace(/✓/g, '√')
+      .replace(/✗/g, 'X')
+      .replace(/→/g, '->')
+      .replace(/←/g, '<-')
+      .replace(/•/g, '*');
+
+    const lines = pdf.splitTextToSize(cleanText, maxWidth);
     let currentY = y;
 
     lines.forEach((line: string) => {
@@ -86,7 +109,7 @@ export class ArabicPdfGenerator {
       } else {
         pdf.text(line, x, currentY);
       }
-      currentY += fontSize * 0.5; // Line height
+      currentY += fontSize * 0.5;
     });
 
     return currentY;
@@ -104,7 +127,7 @@ export class ArabicPdfGenerator {
     const leftMargin = 20;
 
     // Header Section
-    yPosition = this.addArabicText(
+    yPosition = this.addText(
       pdf,
       'تقرير نتائج الامتحان',
       pageWidth / 2,
@@ -115,7 +138,7 @@ export class ArabicPdfGenerator {
     yPosition += 10;
 
     // Exam Title
-    yPosition = this.addArabicText(
+    yPosition = this.addText(
       pdf,
       `عنوان الاختبار: ${attempt.exam.title}`,
       rightMargin,
@@ -127,7 +150,7 @@ export class ArabicPdfGenerator {
 
     // User Information
     if (userProfile?.name) {
-      yPosition = this.addArabicText(
+      yPosition = this.addText(
         pdf,
         `اسم المترشح: ${userProfile.name}`,
         rightMargin,
@@ -137,7 +160,7 @@ export class ArabicPdfGenerator {
     }
 
     if (userProfile?.email) {
-      yPosition = this.addArabicText(
+      yPosition = this.addText(
         pdf,
         `البريد الإلكتروني: ${userProfile.email}`,
         rightMargin,
@@ -148,7 +171,7 @@ export class ArabicPdfGenerator {
 
     // Date and Time
     const examDate = format(new Date(attempt.completed_at), 'dd/MM/yyyy - HH:mm', { locale: arDZ });
-    yPosition = this.addArabicText(
+    yPosition = this.addText(
       pdf,
       `تاريخ الامتحان: ${examDate}`,
       rightMargin,
@@ -159,7 +182,7 @@ export class ArabicPdfGenerator {
     yPosition += 5;
 
     // Score Summary
-    yPosition = this.addArabicText(
+    yPosition = this.addText(
       pdf,
       `النتيجة النهائية: ${attempt.score} من ${answers.length} (${Math.round(attempt.percentage)}%)`,
       rightMargin,
@@ -170,7 +193,7 @@ export class ArabicPdfGenerator {
     yPosition += 15;
 
     // Questions Section
-    yPosition = this.addArabicText(
+    yPosition = this.addText(
       pdf,
       'تفاصيل الأسئلة والإجابات:',
       rightMargin,
@@ -189,7 +212,7 @@ export class ArabicPdfGenerator {
       }
 
       // Question number and text
-      yPosition = this.addArabicText(
+      yPosition = this.addText(
         pdf,
         `السؤال ${index + 1}: ${answer.question.question_text}`,
         rightMargin,
@@ -204,10 +227,9 @@ export class ArabicPdfGenerator {
         a => a.id === answer.selected_answer_id
       )?.answer_text || 'لم يتم الإجابة';
 
-      const userIcon = answer.is_correct ? '✓' : '✗';
-      const userColor = answer.is_correct ? 'green' : 'red';
+      const userIcon = answer.is_correct ? '√' : 'X';
       
-      yPosition = this.addArabicText(
+      yPosition = this.addText(
         pdf,
         `إجابتك: ${userAnswerText} ${userIcon}`,
         rightMargin,
@@ -219,9 +241,9 @@ export class ArabicPdfGenerator {
       if (!answer.is_correct) {
         const correctAnswer = answer.question.answers.find(a => a.is_correct);
         if (correctAnswer) {
-          yPosition = this.addArabicText(
+          yPosition = this.addText(
             pdf,
-            `الإجابة الصحيحة: ${correctAnswer.answer_text} ✓`,
+            `الإجابة الصحيحة: ${correctAnswer.answer_text} √`,
             rightMargin,
             yPosition,
             { fontSize: 11, maxWidth: 170 }
@@ -232,7 +254,7 @@ export class ArabicPdfGenerator {
       // Explanation (if available)
       if (answer.question.explanation) {
         yPosition += 2;
-        yPosition = this.addArabicText(
+        yPosition = this.addText(
           pdf,
           `التفسير: ${answer.question.explanation}`,
           rightMargin,
@@ -256,7 +278,7 @@ export class ArabicPdfGenerator {
     }
 
     yPosition += 10;
-    yPosition = this.addArabicText(
+    yPosition = this.addText(
       pdf,
       `تم إنشاء هذا التقرير في: ${format(new Date(), 'dd/MM/yyyy - HH:mm', { locale: arDZ })}`,
       pageWidth / 2,

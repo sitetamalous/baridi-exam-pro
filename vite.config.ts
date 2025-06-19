@@ -1,4 +1,3 @@
-
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import * as path from "path";
@@ -20,5 +19,11 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  cacheDir: '.vite-new'
+  cacheDir: '.vite-new',
+  optimizeDeps: {
+    include: ['pdfjs-dist/build/pdf.worker.entry']
+  },
+  worker: {
+    format: 'es'
+  }
 }));
