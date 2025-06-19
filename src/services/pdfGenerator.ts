@@ -1,14 +1,25 @@
-import pdfMake from 'pdfmake/build/pdfmake';
-import pdfFonts from 'pdfmake/build/vfs_fonts';
 
-// Initialize pdfMake with fonts - handle undefined vfs_fonts gracefully
-if (pdfFonts && pdfFonts.pdfMake && pdfFonts.pdfMake.vfs) {
-  pdfMake.vfs = pdfFonts.pdfMake.vfs;
-} else if (pdfFonts && pdfFonts.vfs) {
-  pdfMake.vfs = pdfFonts.vfs;
-} else {
-  console.warn('pdfMake fonts not loaded, using default fonts');
-}
+import pdfMake from 'pdfmake/build/pdfmake';
+import { TDocumentDefinitions } from 'pdfmake/interfaces';
+
+// Define fonts for pdfMake with fallback
+const fonts = {
+  Roboto: {
+    normal: 'Roboto-Regular.ttf',
+    bold: 'Roboto-Medium.ttf',
+    italics: 'Roboto-Italic.ttf',
+    bolditalics: 'Roboto-MediumItalic.ttf'
+  },
+  Arabic: {
+    normal: 'Roboto-Regular.ttf',
+    bold: 'Roboto-Medium.ttf',
+    italics: 'Roboto-Italic.ttf',
+    bolditalics: 'Roboto-MediumItalic.ttf'
+  }
+};
+
+// Initialize pdfMake with fonts
+pdfMake.fonts = fonts;
 
 interface ExamAttempt {
   id: string;
@@ -50,221 +61,145 @@ export class PDFGenerator {
     answers: UserAnswer[],
     userProfile?: UserProfile
   ): Promise<Blob> {
-    console.log('Starting PDF generation with pdfMake...');
-    
-    const correctAnswers = answers.filter(a => a.is_correct).length;
-    const totalQuestions = answers.length;
-    const percentage = attempt.percentage || 0;
-    
-    const docDefinition: any = {
-      pageSize: 'A4',
-      pageMargins: [40, 60, 40, 60],
-      defaultStyle: {
-        fontSize: 11,
-        lineHeight: 1.4
-      },
+    const docDefinition: TDocumentDefinitions = {
       content: [
         // Header
         {
-          text: 'Algeria Post Exam Report',
+          text: 'تقرير نتائج الامتحان',
           style: 'header',
-          color: '#00A651',
-          margin: [0, 0, 0, 20]
+          alignment: 'center'
         },
         
-        // Exam Title
+        // Exam title
         {
-          text: attempt.exam?.title || 'امتحان',
-          style: 'examTitle',
-          alignment: 'center',
-          margin: [0, 0, 0, 10]
+          text: `عنوان الاختبار: ${attempt.exam.title}`,
+          style: 'subheader',
+          margin: [0, 20, 0, 10]
         },
         
-        // Student Info
+        // User info
+        ...(userProfile?.name ? [{
+          text: `اسم المترشح: ${userProfile.name}`,
+          margin: [0, 5, 0, 5]
+        }] : []),
+        
+        ...(userProfile?.email ? [{
+          text: `البريد الإلكتروني: ${userProfile.email}`,
+          margin: [0, 5, 0, 5]
+        }] : []),
+        
+        // Date
         {
-          text: `Student: ${userProfile?.name || userProfile?.email || 'Student'}`,
-          style: 'studentInfo',
-          margin: [0, 0, 0, 5]
+          text: `تاريخ الامتحان: ${new Date(attempt.completed_at).toLocaleDateString('ar-DZ')}`,
+          margin: [0, 5, 0, 10]
         },
         
-        // Date and Time
+        // Score
         {
-          text: `Date: ${new Date(attempt.completed_at).toLocaleDateString()} at ${new Date(attempt.completed_at).toLocaleTimeString()}`,
-          style: 'dateInfo',
-          margin: [0, 0, 0, 20]
+          text: `النتيجة النهائية: ${attempt.score} من ${answers.length} (${Math.round(attempt.percentage)}%)`,
+          style: 'subheader',
+          margin: [0, 10, 0, 20]
         },
         
-        // Results Summary
+        // Questions header
         {
-          text: 'Results Summary',
-          style: 'sectionHeader',
-          margin: [0, 0, 0, 10]
-        },
-        
-        {
-          table: {
-            widths: ['50%', '50%'],
-            body: [
-              [
-                { text: 'Total Questions', alignment: 'left' },
-                { text: totalQuestions.toString(), alignment: 'center' }
-              ],
-              [
-                { text: 'Correct Answers', alignment: 'left' },
-                { text: correctAnswers.toString(), alignment: 'center' }
-              ],
-              [
-                { text: 'Wrong Answers', alignment: 'left' },
-                { text: (totalQuestions - correctAnswers).toString(), alignment: 'center' }
-              ],
-              [
-                { text: 'Final Score', alignment: 'left', bold: true },
-                { 
-                  text: `${attempt.score}/${totalQuestions} (${percentage.toFixed(1)}%)`,
-                  alignment: 'center',
-                  bold: true,
-                  color: percentage >= 70 ? '#00A651' : percentage >= 50 ? '#FF9500' : '#FF0000'
-                }
-              ]
-            ]
-          },
-          layout: 'lightHorizontalLines',
-          margin: [0, 0, 0, 20]
-        },
-        
-        // Performance Assessment
-        {
-          text: `Assessment: ${percentage >= 70 ? 'Excellent' : percentage >= 50 ? 'Good' : 'Needs Improvement'}`,
-          style: 'performance',
-          alignment: 'center',
-          color: percentage >= 70 ? '#00A651' : percentage >= 50 ? '#FF9500' : '#FF0000',
-          margin: [0, 0, 0, 30]
-        },
-        
-        // Questions Review
-        {
-          text: 'Detailed Questions Review',
-          style: 'sectionHeader',
-          margin: [0, 0, 0, 15]
+          text: 'تفاصيل الأسئلة والإجابات:',
+          style: 'subheader',
+          margin: [0, 20, 0, 10]
         },
         
         // Questions
         ...answers.map((answer, index) => {
-          const userAnswer = answer.question?.answers?.find(a => a.id === answer.selected_answer_id);
-          const correctAnswer = answer.question?.answers?.find(a => a.is_correct);
+          const userAnswerText = answer.question.answers.find(
+            a => a.id === answer.selected_answer_id
+          )?.answer_text || 'لم يتم الإجابة';
+          
+          const correctAnswer = answer.question.answers.find(a => a.is_correct);
           
           return [
             {
-              text: `Question ${index + 1}:`,
-              style: 'questionNumber',
-              color: '#00A651',
-              margin: [0, 15, 0, 5]
+              text: `السؤال ${index + 1}: ${answer.question.question_text}`,
+              style: 'question',
+              margin: [0, 10, 0, 5]
             },
             {
-              text: answer.question?.question_text || '',
-              style: 'questionText',
-              margin: [0, 0, 0, 10]
+              text: `إجابتك: ${userAnswerText} ${answer.is_correct ? '✓' : '✗'}`,
+              margin: [20, 5, 0, 5],
+              color: answer.is_correct ? 'green' : 'red'
             },
-            {
-              text: `${answer.is_correct ? 'Correct' : 'Wrong'} - Your answer: ${userAnswer?.answer_text || ''}`,
-              color: answer.is_correct ? '#00A651' : '#FF0000',
-              margin: [0, 0, 0, 5]
-            },
-            ...((!answer.is_correct && correctAnswer) ? [{
-              text: `Correct answer: ${correctAnswer.answer_text}`,
-              color: '#00A651',
-              margin: [0, 0, 0, 5]
+            ...(correctAnswer && !answer.is_correct ? [{
+              text: `الإجابة الصحيحة: ${correctAnswer.answer_text} ✓`,
+              margin: [20, 5, 0, 5],
+              color: 'green'
             }] : []),
-            ...(answer.question?.explanation ? [{
-              text: `Explanation: ${answer.question.explanation}`,
-              fontSize: 9,
-              color: '#666666',
-              margin: [0, 5, 0, 10]
+            ...(answer.question.explanation ? [{
+              text: `التفسير: ${answer.question.explanation}`,
+              margin: [20, 5, 0, 10],
+              fontSize: 10,
+              color: 'gray'
             }] : []),
             {
-              canvas: [
-                {
-                  type: 'line',
-                  x1: 0, y1: 0,
-                  x2: 515, y2: 0,
-                  lineWidth: 0.5,
-                  lineColor: '#CCCCCC'
-                }
-              ],
-              margin: [0, 5, 0, 0]
+              canvas: [{ type: 'line', x1: 0, y1: 5, x2: 515, y2: 5, lineWidth: 0.5, lineColor: '#cccccc' }]
             }
           ];
-        }).flat()
+        }).flat(),
+        
+        // Footer
+        {
+          text: `تم إنشاء هذا التقرير في: ${new Date().toLocaleString('ar-DZ')}`,
+          alignment: 'center',
+          margin: [0, 30, 0, 0],
+          fontSize: 10,
+          color: 'gray'
+        }
       ],
       
       styles: {
         header: {
-          fontSize: 20,
+          fontSize: 18,
           bold: true,
-          alignment: 'center'
+          margin: [0, 0, 0, 10]
         },
-        examTitle: {
-          fontSize: 16,
-          bold: true
-        },
-        studentInfo: {
-          fontSize: 12,
-          bold: true
-        },
-        dateInfo: {
-          fontSize: 10
-        },
-        sectionHeader: {
+        subheader: {
           fontSize: 14,
-          bold: true
+          bold: true,
+          margin: [0, 10, 0, 5]
         },
-        performance: {
+        question: {
           fontSize: 12,
           bold: true
-        },
-        questionNumber: {
-          fontSize: 12,
-          bold: true
-        },
-        questionText: {
-          fontSize: 11
         }
       },
       
-      footer: (currentPage: number, pageCount: number) => ({
-        text: `Generated on: ${new Date().toLocaleDateString()} | Algeria Post Exam System | Page ${currentPage} of ${pageCount}`,
-        alignment: 'center',
-        fontSize: 8,
-        margin: [0, 10, 0, 0]
-      })
+      defaultStyle: {
+        font: 'Arabic',
+        fontSize: 11,
+        direction: 'rtl'
+      },
+      
+      pageMargins: [40, 60, 40, 60]
     };
 
     return new Promise((resolve, reject) => {
       try {
-        pdfMake.createPdf(docDefinition).getBlob((blob: Blob) => {
-          console.log('PDF generated successfully with pdfMake');
+        const pdfDocGenerator = pdfMake.createPdf(docDefinition);
+        pdfDocGenerator.getBlob((blob: Blob) => {
           resolve(blob);
         });
       } catch (error) {
-        console.error('Error generating PDF:', error);
         reject(error);
       }
     });
   }
 
-  static async downloadPDF(blob: Blob, filename: string) {
-    try {
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Error downloading PDF:', error);
-      throw new Error('Failed to download PDF');
-    }
+  static downloadPDF(blob: Blob, filename: string): void {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   }
 }
